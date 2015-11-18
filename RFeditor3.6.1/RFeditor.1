@@ -1,0 +1,68 @@
+.TH RFeditor 1
+.SH NAME
+*****This man page is outdated! 
+.LP
+RFeditor - edit radial and transverse receiver function traces.
+.SH SYNOPSIS
+.nf
+RFeditor dbin dbout [-st b|m|r][-rm|-review-mode][-pf pffile][-laststa xx||-ss subset_condition][-v|V]
+.fi
+.SH DESCRIPTION
+This program is used to review and edit RF traces for both radial and transverse data. It reads in from Datascope database and writes out the edited traces into a new database.   
+.LP
+Here are key elements of the program:
+1.  Constructor launches two editing windows, one for R and one for T data.  
+2.  Extract chaannel data to display for editing. 
+3.  The bad trace is marked as dead.   
+4.  Edited traces are saved to the new database with the only distinction being some traces are marked dead.   
+.SH OPTIONS
+.IP "-st b|m|r"
+This option specifies the stacking method used before displaying the data. b is for BasicStack, which is average of all traces; m means for MedianStack, which uses the median trace as the stack; r is RobustSNR method, same as used by dbxcor. 
+.IP "-rm|-review-mode"
+This option turns on the review mode. Under review mode, all edits will be dropped. This is useful when quickly reviewing large dataset without saving edits.
+.IP "-pf"
+Use pffile instead of the default RFeditor.pf.
+.IP "-laststa xx"
+Only process data with station greater than xx (sorting by alphabetical order). 
+.IP "-ss subset_condition"
+Only process data satifying the subset_condition.
+.IP "-v|V"
+Run program in verbose mode.
+.SH PARAMETER FILE
+.LP
+You can copy RFeditor.pf into your current PFPATH. Here are the main parameters:
+.IP "minimum_number_receiver_functions"
+Threshold for editing. Station will be dropped if the number of RFs is smaller than this value.
+.IP radial_channel_key
+Channel code (chan) for radial component.
+.IP transverse_channel_key
+Channel code (chan) for transverse component.
+.IP set_continue_mode_by_default  
+If this is true: continue automatically on next station if the output table is not empty. Otherwise (false): ask user to determine.
+.IP apply_prefilter
+Whether apply a prefilter before stacking and displaying or not (display and edit the raw data).
+.IP filter
+Define the prefilter type and parameters, e.g., BW 0.02 2 1 2.
+.IP "robust_window_start robust_window_end"
+Stacking window params for robustSNR stacking.
+.IP save_metadata_only
+If true, the program will save only the metadata (wfdisc table) without saving the waveform data. False, the program will save the edited traces to a new Antelope Datascope database into the directory given by output_dir.
+.IP save_filtered_data   
+This par is suggested to be false to save the unfiltered raw data. The program will quit if this and the 'save_metadata_only' are both true.
+.IP output_dir
+Ouput directory for the edited RF traces.
+.IP output_dfile_base 
+The dfile attribite value will be something like: output_dfile_base_sta.chan.
+.SH "BUGS AND CAVEATS"
+.LP
+1. Stacktype b and m are not working yet. 
+.LP
+2. If edit the transverse first, the program may not be working correctly.
+.SH AUTHOR
+Xiaotao Yang & Gary L. Pavlis
+.LP
+Indiana University
+.LP
+Jan-July 2015
+.LP
+
