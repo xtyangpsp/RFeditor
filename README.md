@@ -8,7 +8,7 @@ Contact: xtyang@indiana.edu (Xiaotao Yang)
 
 Reference for the method: X. Yang, G. Pavlis, Y. Wang (submitted in 2015). A Quality Control Method for Teleseismic P-Wave Receiver Functions, Bulletin of the Seismological Society of America
 
-Current version: 3.6.1, updated on 8/19/2015
+Current version: 3.6.1, updated on 12/04/2015
 
 Release notes: see ReleaseNotes.txt in the version folder (e.g., RFeditor3.6.1) for details on release notes for each version.
 
