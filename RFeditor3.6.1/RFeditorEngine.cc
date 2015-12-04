@@ -636,6 +636,8 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
 				else
 				{
 					TimeWindow stw=teo->find_common_timewindow(tse);
+					//DEBUG
+                    //cout<<stw.start<<", "<<stw.end<<endl;
 					//check if robust window is bigger than stackwindow.
                     if(robust_twin.start < stw.start || robust_twin.end > stw.end)
                     {
@@ -674,6 +676,8 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
 				else
 				{
 					TimeWindow stw=teo->find_common_timewindow(tse_tmp);
+					//DEBUG
+                    //cout<<stw.start<<", "<<stw.end<<endl;
                     if(robust_twin.start < stw.start || robust_twin.end > stw.end)
                     {
                         cerr<<"**Error in applying klxcor (GUIoff): robust timewindow is bigger than stack timewindow."<<endl;
@@ -737,6 +741,8 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
 						//DEBUG
 						//cout<<"Getting common timewindow ..."<<endl;
 						TimeWindow stw=teo->find_common_timewindow(tse);
+						//DEBUG
+                    	//cout<<stw.start<<", "<<stw.end<<endl;
 						if(robust_twin.start < stw.start || robust_twin.end > stw.end)
 						{
 							cerr<<"**Error in applying klxcor (GUIoff): robust timewindow is bigger than stack timewindow."<<endl;

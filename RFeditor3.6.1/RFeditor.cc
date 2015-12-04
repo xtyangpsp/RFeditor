@@ -83,6 +83,8 @@ void history()
     <<" (3) version 3.6.0: iteratively apply klrfqi."<<endl
 <<">> 8/19/2015 XT Yang"<<endl
 	<<" (1) read optional outdir and summary file name from command line arguments."<<endl
+<<">> 12/04/2015 XT Yang"<<endl
+	<<" (1) fixed the bug that when arrival table is not used, the program still was trying to read arrival when computing post edit FA infor."<<endl
 	<<endl;
 		
 		exit(0);
@@ -788,7 +790,7 @@ bool check_continue_mode(bool set_continue_mode_by_default,string laststation)
 }
 void version()
 {
-	cerr <<"< version 3.6.1 > 08/19/2015"<<endl;
+	cerr <<"< version 3.6.1 > 12/04/2015"<<endl;
 }
 void author()
 {
@@ -1886,9 +1888,14 @@ int main(int argc, char **argv)
 							double FA_lag=FA_time - FA_reference_time;
 							double FA_amplitude=tmpts.get_double(FA_amplitude_key);
 							int evid_tmp=iptr->get_int(evidkey);
-							fprintf(fh_fa,"%5s   %6d    %15.3f   %6.3f   %8.4f   %6.1f\n",
+							if(use_arrival_data)
+								fprintf(fh_fa,"%5s   %6d    %15.3f   %6.3f   %8.4f   %6.1f\n",
 									sta.c_str(),evid_tmp,iptr->get_double("time"),
 									FA_lag,FA_amplitude,iptr->get_double("assoc.esaz"));
+							else
+								fprintf(fh_fa,"%5s   %6d    %15.3f   %6.3f   %8.4f\n",
+									sta.c_str(),evid_tmp,iptr->get_double("time"),
+									FA_lag,FA_amplitude);
 							tmpts.s.clear();
 						}
 				
