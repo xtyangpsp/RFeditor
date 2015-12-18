@@ -20,3 +20,7 @@ Resolved: added edit_on_channel in pf file. User can now set the channel they wa
 (2) Kill low-frequency contaminated traces is not recommended currently.
 
 
+<<<< v3.6.1 >>>>
+(1) Iteratively apply RFQI cutoff procedure.
+(2) Added option of specifying outdir as an argument.
+
