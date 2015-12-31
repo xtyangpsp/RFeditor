@@ -1,0 +1,249 @@
+Attribute ntracein
+	Integer (8)
+	Format ( "%8ld" )
+	Null ( "-1" )
+	Description ( "Original number of traces" )
+	Detail {
+		This field is the number of traces in the 
+		original input ensemble.
+	}
+	;
+
+Attribute nkilled
+	Integer (8)
+	Format ( "%8ld" )
+	Null ( "-1" )
+	Description ( "Total number of killed traces" )
+	Detail {
+		This field is the number of traces killed 
+		by editing procedures.
+	}
+	;
+	
+Attribute acptrate
+	Real (8)
+	Format ( "%6.2f" )
+	Null ( "-99.00" )
+	Description ( "Acceptance rate in percentage (%)" )
+	Detail {
+		This attribute saves the acceptance rate, 
+		which is 100*(ntracein-nkilled)/ntracein.
+	}
+	;
+	
+Attribute aknfa
+	Integer (8)
+	Format ( "%8ld" )
+	Null ( "-1" )
+	Description ( "Traces killed with Negative First Arrivals (NFAs)" )
+	Detail {
+		This field is the number of traces killed 
+		with all negative arrivals within the first few seconds.
+	}
+	;
+
+Attribute aklat
+	Integer (8)
+	Format ( "%8ld" )
+	Null ( "-1" )
+	Description ( "Traces killed Large Amplitude Traces (lat)" )
+	Detail {
+		This field is the number of killed traces
+		with large amplitude (with given threshold).
+	}
+	;
+
+Attribute aksfa
+	Integer (8)
+	Format ( "%8ld" )
+	Null ( "-1" )
+	Description ( "Traces killed with Small First Arrivals (sfa)" )
+	Detail {
+		This field is the number of traces killed 
+		with small first arrivals (with given threshold).
+	}
+	;
+
+Attribute akgpc
+	Integer (8)
+	Format ( "%8ld" )
+	Null ( "-1" )
+	Description ( "Traces killed with Growing P-Coda (gpc)" )
+	Detail {
+		This field is the number of traces killed 
+		with growing p-coda (with given tolerance).
+	}
+	;
+
+Attribute akca
+	Integer (8)
+	Format ( "%8ld" )
+	Null ( "-1" )
+	Description ( "Traces killed with Clustered Arrivals (CAs)" )
+	Detail {
+		This field is the number of traces killed 
+		with clustered arrivals (within given timewindow).
+	}
+	;
+
+Attribute aklfc
+	Integer (8)
+	Format ( "%8ld" )
+	Null ( "-1" )
+	Description ( "Low-Frequency-Contaminated traces (LFC)" )
+	Detail {
+		This field is the number of Low-Frequency-Contaminated traces
+		killed with given threshold (range).
+	}
+	;
+	
+Attribute klsw
+	Integer (8)
+	Format ( "%8ld" )
+	Null ( "-1" )
+	Description ( "Traces killed with Low Stack Weight (lsw)" )
+	Detail {
+		This field is the number of traces killed 
+		with low stack weight (with given threshold).
+	}
+	;
+
+Attribute klxcor
+	Integer (8)
+	Format ( "%8ld" )
+	Null ( "-1" )
+	Description ( "Low Correlation with Reference Trace (lxcor)" )
+	Detail {
+		This field is the number of traces killed 
+		with low correlation coefficience with the 
+		reference trace (with given threshold).
+	}
+	;
+	
+Attribute kldsi
+	Integer (8)
+	Format ( "%8ld" )
+	Null ( "-1" )
+	Description ( "Low Decon-Success Index (dsi)" )
+	Detail {
+		This field is the number of traces killed 
+		with low Decon-Success Index (dsi) (with 
+		given threshold).
+	}
+	;
+Attribute klrfqi
+	Integer (8)
+	Format ( "%8ld" )
+	Null ( "-1" )
+	Description ( "Low Receiver Function Quality Index (lrfqi)" )
+	Detail {
+		This field is the number of traces killed 
+		with low receiver function quality index 
+		(with given threshold).
+		RF quality index is defined as: 
+		QI=a1*StackWeight + a2*Xcorcoe + 
+			a3*DeconSuccessIndex (if decon is available).
+		a1, a2, a3 are empirical values. This index 
+		is introduced to get a reasonable overall
+		ranking of the traces.
+	}
+	;
+Attribute kdnitn
+	Integer (8)
+	Format ( "%8ld" )
+	Null ( "-1" )
+	Description ( "Traces killed by decon.niteration threshold" )
+	Detail {
+		This field is the number of traces killed 
+		by decon.niteration threshold.
+	}
+	;
+
+Attribute kdnspike
+	Integer (8)
+	Format ( "%8ld" )
+	Null ( "-1" )
+	Description ( "Traces killed by decon.nspike threshold" )
+	Detail {
+		This field is the number of traces killed by 
+		decon.nspike threshold.
+	}
+	;
+
+Attribute kdepsilon
+	Integer (8)
+	Format ( "%8ld" )
+	Null ( "-1" )
+	Description ( "Traces killed by decon.epsilon threshold" )
+	Detail {
+		This field is the number of traces killed by 
+		decon.epsilon threshold.
+	}
+	;
+
+Attribute kdpkamp
+	Integer (8)
+	Format ( "%8ld" )
+	Null ( "-1" )
+	Description ( "Traces killed by decon.peakamp threshold" )
+	Detail {
+		This field is the number of traces killed by 
+		decon.peakamp threshold.
+	}
+	;
+
+Attribute kdavamp
+	Integer (8)
+	Format ( "%8ld" )
+	Null ( "-1" )
+	Description ( "Traces killed by decon.averamp threshold" )
+	Detail {
+		This field is the number of traces killed by 
+		decon.averamp threshold.
+	}
+	;
+
+Attribute kdsnr
+	Integer (8)
+	Format ( "%8ld" )
+	Null ( "-1" )
+	Description ( "Traces killed by decon.rawsnr threshold" )
+	Detail {
+		This field is the number of traces killed by 
+		decon.rawsnr threshold.
+	}
+	;
+
+Attribute kmanual
+	Integer (8)
+	Format ( "%8ld" )
+	Null ( "-1" )
+	Description ( "Number of manually killed traces" )
+	Detail {
+		This field is the number of spikes in the each 
+		waveform.
+	}
+	;
+
+Attribute nrestored
+	Integer (8)
+	Format ( "%8ld" )
+	Null ( "-1" )
+	Description ( "Number of restored traces" )
+	Detail {
+		This field is the number of restored traces, 
+		which were previously killed by auto-killing 
+		procedures.
+	}
+	;
+
+Relation tredit
+	Fields ( sta ntracein nkilled acptrate aknfa aklat aksfa akgpc akca aklfc klsw klxcor kldsi klrfqi kdnitn kdnspike kdepsilon kdpkamp kdavamp kdsnr kmanual nrestored )
+	Primary ( sta ntracein nkilled acptrate )
+	Foreign ( sta )
+	Description ( "This table saves trace editing summary" )
+	Detail {
+		This table can be used for statistical analysis
+		of trace editing process.
+	}
+	;
