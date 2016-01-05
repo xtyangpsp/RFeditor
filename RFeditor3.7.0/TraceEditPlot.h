@@ -110,6 +110,7 @@ public:
     void customize_kill_low_ref_correlation();
     void apply_kill_low_RFQualityIndex();
     //sorting procedures.
+    void sort_by_magnitude();
     void sort_by_ref_trace();
     void sort_by_xcor_to_stacktrace();
     void customize_time_window_by_WINDOWTYPE();
@@ -140,6 +141,7 @@ public:
     //bool robust_window_set;
 	bool allow_edit;
 	bool use_decon_in_editing;
+	bool use_netmag_table;
 	bool killed_review_mode;
 	//
 	string decon_kill_parname;
@@ -156,6 +158,8 @@ public:
     StackType stacktype;
 	friend class SeismicPlot;
 	friend class TraceEditOperator;
+	
+	
 private:
     Metadata metadata; //used to save metadata used in ploting the stack trace.
     DisplayMarkerDataRec tracemarkers;

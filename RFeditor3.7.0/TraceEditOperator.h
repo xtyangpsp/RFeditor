@@ -21,6 +21,7 @@ const string killmethodkey("kill_by_method");
 const string killed_trace_key("is_killed_trace");
 const string FA_time_key("RF_FirstArrivalTime");
 const string FA_amplitude_key("RF_FirstArrivalAmplitude");
+const string magnitude_key("magnitude"),magtype_key("magtype");
 /*
 RF Quality Index:
 /RF quality index is defined as: 
@@ -176,7 +177,11 @@ class TraceEditOperator
 		//show metadata for all traces with given attribute;
 		bool show_metadata(TimeSeriesEnsemble& tse, string mdtag,MDtype mdt);
 		// extract and save metadata for given trace (with evid) to FILE handle fh.
+		// by default, the metadata version is 1 for this routine.
 		void save_metadata(TimeSeries& ts, FILE * fh, bool use_decon);
+		// extract and save metadata for given trace (with evid) to FILE handle fh.
+		// mdversion: metadata version, currently supports 1, 2.
+		void save_metadata(TimeSeries& ts, FILE * fh, bool use_decon, int mdversion);
 		//those two routines find the common time window of all of the members.
 		//This is useful when the members don't share the same length.
 		TimeWindow find_common_timewindow(TimeSeriesEnsemble& tse);
@@ -205,6 +210,8 @@ class TraceEditOperator
 		vector<int> sort_by_less_xcorcoef(TimeSeriesEnsemble& tse, int ref_evid);
 		vector<int> sort_by_less_xcorcoef(TimeSeriesEnsemble& tse, 
 					TimeSeries& ref_trace);
+		//Sort by event magnitude extracted from trace metadata
+		vector<int> sort_by_ascend_magnitude(TimeSeriesEnsemble& tse);
 		//do robust stacking and sort the ensemble members.
 		//it reads in the stacktype. It is able to, potentially, handle different stack type.
 		// at the time of it was wrote, only the RobustSNR stacking works.

@@ -87,6 +87,7 @@ void history()
 	<<" (1) fixed the bug that when arrival table is not used, the program still was trying to read arrival when computing post edit FA information."<<endl
 <<">> 12/31/2015 XT Yang"<<endl
 	<<" (1) added option to use netmag table in sorting traces."<<endl
+	<<" (2) upgraded metadata version/speficier to 2 (added magnitude attributes) when saving trace to file."<<endl
 	<<endl;
 		
 		exit(0);
@@ -1834,6 +1835,7 @@ int main(int argc, char **argv)
 				tse_tmp.member.clear();
 				//exit(0);
 			}
+			
 			if(!review_mode || !GUIoff)
 			{
 				if(SEISPP_verbose) cout<< "Loading data into editor ..."<<endl;
