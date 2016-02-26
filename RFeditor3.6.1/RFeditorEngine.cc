@@ -628,9 +628,9 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
 				cerr<<"**Caution: in GUIoff mode, stack trace is used as the reference trace."<<endl;
 				min_xcorcoe=md.get_double("xcorcoe_min");
 				TimeSeriesEnsemble tse_tmp=teo->exclude_false_traces(tse);
-				if(tse_tmp.member.size()<=0)
+				if(tse_tmp.member.size()<=1)
 				{
-					cerr<<"** Ensemble is empty. Skipped this kill procedure: klxcor."<<endl;
+					cerr<<"** Only 1 trace or less left in ensemble. Skipped this Statistics-Based kill procedure: klxcor."<<endl;
 					tse_tmp.member.clear();
 				}
 				else
@@ -646,7 +646,7 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
                     }
 					TimeSeries ts_tmp;
 					try{
-					ts_tmp=teo->get_stack(tse,stw, 
+					ts_tmp=teo->get_stack(tse_tmp,stw, 
 						robust_twin, stacktype);
 					}catch(...)
 					{cerr<<"**Error when getting stack trace!"<<endl; throw;exit(-1);}
@@ -668,9 +668,9 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
 				min_stackweight=md.get_double("stackweight_min");
 				
 				TimeSeriesEnsemble tse_tmp=teo->exclude_false_traces(tse);
-				if(tse_tmp.member.size()<=0)
+				if(tse_tmp.member.size()<=1)
 				{
-					cerr<<"** Ensemble is empty. Skipped this kill procedure: klsw."<<endl;
+					cerr<<"** Only 1 trace or less left in ensemble. Skipped this Statistics-Based kill procedure: klsw."<<endl;
 					tse_tmp.member.clear();
 				}
 				else
@@ -680,7 +680,7 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
                     //cout<<stw.start<<", "<<stw.end<<endl;
                     if(robust_twin.start < stw.start || robust_twin.end > stw.end)
                     {
-                        cerr<<"**Error in applying klxcor (GUIoff): robust timewindow is bigger than stack timewindow."<<endl;
+                        cerr<<"**Error in applying klsw (GUIoff): robust timewindow is bigger than stack timewindow."<<endl;
                         exit(-1);
                     }
 					try{
@@ -730,9 +730,9 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
 				while (nkill_rfqi>0)
 				{
 					TimeSeriesEnsemble tse_tmp=teo->exclude_false_traces(tse);
-					if(tse_tmp.member.size()<=0)
+					if(tse_tmp.member.size()<=1)
 					{
-						cerr<<"** Ensemble is empty. Skipped this kill procedure: klrfqi."<<endl;
+						cerr<<"** Only 1 trace or less left in ensemble. Skipped this Statistics-Bsed procedure: klrfqi."<<endl;
 						tse_tmp.member.clear();
 						break;
 					}
@@ -745,7 +745,7 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
                     	//cout<<stw.start<<", "<<stw.end<<endl;
 						if(robust_twin.start < stw.start || robust_twin.end > stw.end)
 						{
-							cerr<<"**Error in applying klxcor (GUIoff): robust timewindow is bigger than stack timewindow."<<endl;
+							cerr<<"**Error in applying klrfqi (GUIoff): robust timewindow is bigger than stack timewindow."<<endl;
 							exit(-1);
 						}
 						//DEBUG

@@ -1790,6 +1790,8 @@ TimeSeries TraceEditOperator::get_stack(TimeSeriesEnsemble& d,TimeWindow twin,
         if(d.member.size()<=0) return result;
         //manually set stack weight to 1.0 if ensemble contains only one trace.
 		//otherwise, will get error when extracting stack_weight.
+		//cerr<<d.member.size()<<endl;
+		//exit(-1);
 		if(d.member.size()==1) 
 		{
 			d.member[0].put(SEISPP::stack_weight_keyword,1.0);
