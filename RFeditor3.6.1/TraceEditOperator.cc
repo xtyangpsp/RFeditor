@@ -1788,6 +1788,16 @@ TimeSeries TraceEditOperator::get_stack(TimeSeriesEnsemble& d,TimeWindow twin,
 	try{
         /* Silently do nothing if the ensemble is empty */
         if(d.member.size()<=0) return result;
+        //manually set stack weight to 1.0 if ensemble contains only one trace.
+		//otherwise, will get error when extracting stack_weight.
+		if(d.member.size()==1) 
+		{
+			d.member[0].put(SEISPP::stack_weight_keyword,1.0);
+			cerr<<"Warning in get_stack(): stack weight is "
+				<<"manually set to 1.0 for single-trace ensemble!"<<endl;
+			cerr<<"Warning in get_stack(): ensemble has only 1 member, which is assigned to the stacked trace."<<endl;
+			return result;
+		}
         Stack s(d,twin,rtw,stacktype);
         /*
         TimeSeries *initial_beam=new TimeSeries(s.stack);
@@ -1832,14 +1842,6 @@ TimeSeries TraceEditOperator::get_stack(TimeSeriesEnsemble& d,TimeWindow twin,
 		{
 			cerr<<"Warning: for BasicStack and MedianStack, "
 				<<"all traces have the same stack weight 1.0!"<<endl;
-		}
-		//manually set stack weight to 1.0 if ensemble contains only one trace.
-		//otherwise, will get error when extracting stack_weight.
-		if(d.member.size()==1) 
-		{
-			d.member[0].put(SEISPP::stack_weight_keyword,1.0);
-			cerr<<"Warning in get_stack(): stack weight is "
-				<<"manually set to 1.0 for single-trace ensemble!"<<endl;
 		}
 		
 		for(i=0,iptr=d.member.begin();iptr!=d.member.end();++iptr,++i)

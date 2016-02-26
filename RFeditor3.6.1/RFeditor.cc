@@ -85,6 +85,9 @@ void history()
 	<<" (1) read optional outdir and summary file name from command line arguments."<<endl
 <<">> 12/04/2015 XT Yang"<<endl
 	<<" (1) fixed the bug that when arrival table is not used, the program still was trying to read arrival when computing post edit FA infor."<<endl
+<<">> 02/26/2016 XT Yang"<<endl
+	<<" (1) fixed the bug that when ensemble has only 1 trace left, get_stack() will throw error and exit."<<endl
+	<<"     The stack weight is set to 1.0. The only one trace is assigned to the stacked trace."<<endl
 	<<endl;
 		
 		exit(0);
@@ -790,7 +793,7 @@ bool check_continue_mode(bool set_continue_mode_by_default,string laststation)
 }
 void version()
 {
-	cerr <<"< version 3.6.1 > 12/04/2015"<<endl;
+	cerr <<"< version 3.6.1 > 2/26/2016"<<endl;
 }
 void author()
 {
