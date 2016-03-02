@@ -88,6 +88,9 @@ void history()
 <<">> 12/31/2015 XT Yang"<<endl
 	<<" (1) added option to use netmag table in sorting traces."<<endl
 	<<" (2) upgraded metadata version/speficier to 2 (added magnitude attributes) when saving trace to file."<<endl
+<<">> 02/26/2016 XT Yang"<<endl
+	<<" (1) fixed the bug that when ensemble has only 1 trace left, get_stack() will throw error and exit."<<endl
+	<<"     The stack weight is set to 1.0. The only one trace is assigned to the stacked trace."<<endl
 	<<endl;
 		
 		exit(0);
@@ -793,7 +796,7 @@ bool check_continue_mode(bool set_continue_mode_by_default,string laststation)
 }
 void version()
 {
-	cerr <<"< version 3.7.0 > 12/31/2015"<<endl;
+	cerr <<"< version 3.7.0.1 > 2/26/2016"<<endl;
 }
 void author()
 {
