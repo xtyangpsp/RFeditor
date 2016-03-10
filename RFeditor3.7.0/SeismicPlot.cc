@@ -2429,7 +2429,7 @@ void sort_by_magnitude_callback(Widget w, XtPointer client_data, XtPointer userd
 }
 void TraceEditPlot::sort_by_magnitude()
 {
-	cout<<"This is a call test!"<<endl;
+	//cout<<"This is a call test!"<<endl;
 	this->backup_undo_tse();
 	undo_for_kill=false;
 	TimeSeriesEnsemble * sensemble;
