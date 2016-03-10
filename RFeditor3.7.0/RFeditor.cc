@@ -91,11 +91,59 @@ void history()
 <<">> 02/26/2016 XT Yang"<<endl
 	<<" (1) fixed the bug that when ensemble has only 1 trace left, get_stack() will throw error and exit."<<endl
 	<<"     The stack weight is set to 1.0. The only one trace is assigned to the stacked trace."<<endl
+<<">> 03/10/2016 XT Yang"<<endl
+	<<" (1) klsw and klxcor are now iterative."<<endl
 	<<endl;
 		
 		exit(0);
 }
 
+void version()
+{
+	cerr <<"< version 3.7.0.2 > 3/10/2016"<<endl;
+}
+void author()
+{
+	cerr <<endl<<"Xiaotao Yang & Gary Pavlis, Indiana University"<<endl<<endl;
+}
+void usage_message()
+{
+    version();
+    cerr << "RFeditor dbin dbout [-d outdir][-tredit filename][--review-mode|-rm][--gui-off|-go] [--first-arrival|-fa fa_filename][-pf pffile][-laststa xx][-ss subset_condition][-v|V][-h|-H]"<<endl;
+    cerr << "** Use -h|-H to print out detailed explanations on the options."<<endl;
+    author();
+}
+void help()
+{
+	usage_message();
+	cout<<"Options for running mode:"<<endl
+    	<<"--review-mode|rm    :"<<endl
+    	<<"        Edits will be dropped without saving to the database."<<endl
+    	<<"--gui-off|-go       :"<<endl
+    	<<"        In GUI-off mode, the program does editings without plotting the data."<<endl
+    	<<"        The editing parameters are read in from the pf file. This can be also"<<endl
+    	<<"        called auto-mode."<<endl
+    	<<"--first-arrival|-fa fa_filename :"<<endl
+    	<<"        In this mode, the first arrival information will be written out into"<<endl
+    	<<"        fa_filename as a plain text file"<<endl;
+    cout<<"Other options:"<<endl
+    	<<"-d outdir:"<<endl
+    	<<"        Save edited data into outdir, default is RFDateEdited."<<endl
+    	<<"-tredit filename:"<<endl
+    	<<"        Save copy of the editing summary to file: filename (plain text file). Otherwise only save to db table tredit."<<endl
+    	<<"-laststa xx:"<<endl
+    	<<"        Start from the station after station xx."<<endl
+    	<<"-pf pffile:"<<endl
+    	<<"        Use alternate pf instead of the default: RFeditor.pf."<<endl;
+    exit(0);
+}
+void usage()
+{
+	usage_message();
+    exit(-1);
+}
+
+bool SEISPP::SEISPP_verbose(false);
 /* Simple algorithm sets an int metadata item (evidkey defined in 
    RFeditorEngine) by a simple counts starting at 1.  
    The algorith is very simple.  It assumes the data were already sorted
@@ -794,52 +842,7 @@ bool check_continue_mode(bool set_continue_mode_by_default,string laststation)
 	return(turn_on_continue_mode);
 	}catch(...){throw;};
 }
-void version()
-{
-	cerr <<"< version 3.7.0.1 > 2/26/2016"<<endl;
-}
-void author()
-{
-	cerr <<endl<<"Xiaotao Yang & Gary Pavlis, Indiana University"<<endl<<endl;
-}
-void usage_message()
-{
-    version();
-    cerr << "RFeditor dbin dbout [-d outdir][-tredit filename][--review-mode|-rm][--gui-off|-go] [--first-arrival|-fa fa_filename][-pf pffile][-laststa xx][-ss subset_condition][-v|V][-h|-H]"<<endl;
-    cerr << "** Use -h|-H to print out detailed explanations on the options."<<endl;
-    author();
-}
-void help()
-{
-	usage_message();
-	cout<<"Options for running mode:"<<endl
-    	<<"--review-mode|rm    :"<<endl
-    	<<"        Edits will be dropped without saving to the database."<<endl
-    	<<"--gui-off|-go       :"<<endl
-    	<<"        In GUI-off mode, the program does editings without plotting the data."<<endl
-    	<<"        The editing parameters are read in from the pf file. This can be also"<<endl
-    	<<"        called auto-mode."<<endl
-    	<<"--first-arrival|-fa fa_filename :"<<endl
-    	<<"        In this mode, the first arrival information will be written out into"<<endl
-    	<<"        fa_filename as a plain text file"<<endl;
-    cout<<"Other options:"<<endl
-    	<<"-d outdir:"<<endl
-    	<<"        Save edited data into outdir, default is RFDateEdited."<<endl
-    	<<"-tredit filename:"<<endl
-    	<<"        Save copy of the editing summary to file: filename (plain text file). Otherwise only save to db table tredit."<<endl
-    	<<"-laststa xx:"<<endl
-    	<<"        Start from the station after station xx."<<endl
-    	<<"-pf pffile:"<<endl
-    	<<"        Use alternate pf instead of the default: RFeditor.pf."<<endl;
-    exit(0);
-}
-void usage()
-{
-	usage_message();
-    exit(-1);
-}
 
-bool SEISPP::SEISPP_verbose(false);
 /*==================================================================
 //==================================================================
 //====================== Main program ==============================
