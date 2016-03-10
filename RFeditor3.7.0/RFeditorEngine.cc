@@ -627,76 +627,94 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
 			{
 				cerr<<"**Caution: in GUIoff mode, stack trace is used as the reference trace."<<endl;
 				min_xcorcoe=md.get_double("xcorcoe_min");
-				TimeSeriesEnsemble tse_tmp=teo->exclude_false_traces(tse);
-				if(tse_tmp.member.size()<=1)
+				
+				//iteratively apply klxcor
+				long nkill_xcor(tse.member.size());// initialize nkill as the ensemble size.
+				int itn(1);
+				while (nkill_xcor>0)
 				{
-					cerr<<"** Only 1 trace or less left in ensemble. Skipped this Statistics-Based kill procedure: klxcor."<<endl;
-					tse_tmp.member.clear();
-				}
-				else
-				{
-					TimeWindow stw=teo->find_common_timewindow(tse);
-					//DEBUG
-                    //cout<<stw.start<<", "<<stw.end<<endl;
-					//check if robust window is bigger than stackwindow.
-                    if(robust_twin.start < stw.start || robust_twin.end > stw.end)
-                    {
-                        cerr<<"**Error in applying klxcor (GUIoff): robust timewindow is bigger than stack timewindow."<<endl;
-                        exit(-1);
-                    }
-					TimeSeries ts_tmp;
-					try{
-					ts_tmp=teo->get_stack(tse_tmp,stw, 
-						robust_twin, stacktype);
-					}catch(...)
-					{cerr<<"**Error when getting stack trace!"<<endl; throw;exit(-1);}
-					killtmp=teo->kill_low_ref_correlation_traces(tse_tmp,ts_tmp,
-						ref_trace_xcor_twin,min_xcorcoe);
-					cerr<<"Number of traces killed by applying lxor = "<<killtmp.size()<<endl;
-					if(killtmp.size()>0)
+					TimeSeriesEnsemble tse_tmp=teo->exclude_false_traces(tse);
+					if(tse_tmp.member.size()<=1)
 					{
-						rkills0.insert(killtmp.begin(),killtmp.end());
-						teo->apply_kills(tse,killtmp);
+						cerr<<"** Only 1 trace or less left in ensemble. Skipped this Statistics-Based kill procedure: klxcor."<<endl;
+						tse_tmp.member.clear();
 					}
-					tse_tmp.member.clear();
-					ts_tmp.s.clear();
-					killtmp.clear();
+					else
+					{
+						TimeWindow stw=teo->find_common_timewindow(tse);
+						//DEBUG
+						//cout<<stw.start<<", "<<stw.end<<endl;
+						//check if robust window is bigger than stackwindow.
+						if(robust_twin.start < stw.start || robust_twin.end > stw.end)
+						{
+							cerr<<"**Error in applying klxcor (GUIoff): robust timewindow is bigger than stack timewindow."<<endl;
+							exit(-1);
+						}
+						TimeSeries ts_tmp;
+						try{
+						ts_tmp=teo->get_stack(tse_tmp,stw, 
+							robust_twin, stacktype);
+						}catch(...)
+						{cerr<<"**Error when getting stack trace!"<<endl; throw;exit(-1);}
+						killtmp=teo->kill_low_ref_correlation_traces(tse_tmp,ts_tmp,
+							ref_trace_xcor_twin,min_xcorcoe);
+						nkill_xcor=killtmp.size();
+							cerr<<"Number of traces killed by applying xcor (iteration "<<itn
+								<<" ) = "<<nkill_xcor<<endl;
+						if(nkill_xcor>0)
+						{
+							rkills0.insert(killtmp.begin(),killtmp.end());
+							teo->apply_kills(tse,killtmp);
+						}
+						itn++;
+						tse_tmp.member.clear();
+						ts_tmp.s.clear();
+						killtmp.clear();
+					}	
 				}
 			}
 			if(apply_klsw)
 			{
 				min_stackweight=md.get_double("stackweight_min");
-				
-				TimeSeriesEnsemble tse_tmp=teo->exclude_false_traces(tse);
-				if(tse_tmp.member.size()<=1)
+				//iteratively apply klsw
+				long nkill_sw(tse.member.size());// initialize nkill as the ensemble size.
+				int itn(1);
+				while (nkill_sw>0)
 				{
-					cerr<<"** Only 1 trace or less left in ensemble. Skipped this Statistics-Based kill procedure: klsw."<<endl;
-					tse_tmp.member.clear();
-				}
-				else
-				{
-					TimeWindow stw=teo->find_common_timewindow(tse_tmp);
-					//DEBUG
-                    //cout<<stw.start<<", "<<stw.end<<endl;
-                    if(robust_twin.start < stw.start || robust_twin.end > stw.end)
-                    {
-                        cerr<<"**Error in applying klsw (GUIoff): robust timewindow is bigger than stack timewindow."<<endl;
-                        exit(-1);
-                    }
-					try{
-					teo->get_stack(tse_tmp,stw, 
-						robust_twin, stacktype);
-					}catch(SeisppError& serr)
-					{cerr<<"**Error when getting stack trace!"<<endl; serr.what();exit(-1);}
-					killtmp=teo->kill_low_stackweight_traces(tse_tmp,min_stackweight);
-					cerr<<"Number of traces killed by applying lsw = "<<killtmp.size()<<endl;
-					if(killtmp.size()>0)
+					TimeSeriesEnsemble tse_tmp=teo->exclude_false_traces(tse);
+					if(tse_tmp.member.size()<=1)
 					{
-						rkills0.insert(killtmp.begin(),killtmp.end());
-						teo->apply_kills(tse,killtmp);
+						cerr<<"** Only 1 trace or less left in ensemble. Skipped this Statistics-Based kill procedure: klsw."<<endl;
+						tse_tmp.member.clear();
 					}
-					tse_tmp.member.clear();
-					killtmp.clear();
+					else
+					{
+						TimeWindow stw=teo->find_common_timewindow(tse_tmp);
+						//DEBUG
+						//cout<<stw.start<<", "<<stw.end<<endl;
+						if(robust_twin.start < stw.start || robust_twin.end > stw.end)
+						{
+							cerr<<"**Error in applying klsw (GUIoff): robust timewindow is bigger than stack timewindow."<<endl;
+							exit(-1);
+						}
+						try{
+						teo->get_stack(tse_tmp,stw, 
+							robust_twin, stacktype);
+						}catch(SeisppError& serr)
+						{cerr<<"**Error when getting stack trace!"<<endl; serr.what();exit(-1);}
+						killtmp=teo->kill_low_stackweight_traces(tse_tmp,min_stackweight);
+						nkill_sw=killtmp.size();
+							cerr<<"Number of traces killed by applying sw (iteration "<<itn
+								<<" ) = "<<nkill_sw<<endl;
+						if(nkill_sw>0)
+						{
+							rkills0.insert(killtmp.begin(),killtmp.end());
+							teo->apply_kills(tse,killtmp);
+						}
+						itn++;
+						tse_tmp.member.clear();
+						killtmp.clear();
+					}
 				}
 			}
 
@@ -770,7 +788,8 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
 							killtmp=teo->kill_low_RFQualityIndex_traces(tse_tmp,RFQI_weights[0],
 									RFQI_weights[1],RFQI_weights[2],min_rfqi,true);
 							nkill_rfqi=killtmp.size();
-							cerr<<"Number of traces killed by applying rfqi (iteration "<<itn<<" ) = "<<nkill_rfqi<<endl;
+							cerr<<"Number of traces killed by applying rfqi (iteration "<<itn
+								<<" ) = "<<nkill_rfqi<<endl;
 							if(nkill_rfqi>0)
 							{
 								rkills0.insert(killtmp.begin(),killtmp.end());
