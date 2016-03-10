@@ -178,10 +178,10 @@ class TraceEditOperator
 		bool show_metadata(TimeSeriesEnsemble& tse, string mdtag,MDtype mdt);
 		// extract and save metadata for given trace (with evid) to FILE handle fh.
 		// by default, the metadata version is 1 for this routine.
-		void save_metadata(TimeSeries& ts, FILE * fh, bool use_decon);
+		////void save_metadata(TimeSeries& ts, FILE * fh, bool use_decon);
 		// extract and save metadata for given trace (with evid) to FILE handle fh.
-		// mdversion: metadata version, currently supports 1, 2.
-		void save_metadata(TimeSeries& ts, FILE * fh, bool use_decon, int mdversion);
+		// mdversion: metadata version, currently supports 1, 2. default is 1
+		void save_metadata(TimeSeries& ts, FILE * fh, bool use_decon, int mdversion=1);
 		//those two routines find the common time window of all of the members.
 		//This is useful when the members don't share the same length.
 		TimeWindow find_common_timewindow(TimeSeriesEnsemble& tse);
@@ -226,9 +226,9 @@ class TraceEditOperator
 					TimeSeriesEnsemble& tse,string decon_par);
 		//sort by RF quality index;
 		vector<int> sort_by_RF_quality_index(TimeSeriesEnsemble& tse,
-					double a1, double a2, double a3, bool normalize);
+					double a1, double a2, double a3, bool normalize=true);
 		//remove duplicates by evidkey.
-		int remove_duplicates(TimeSeriesEnsemble& d, bool verbose);
+		int remove_duplicates(TimeSeriesEnsemble& d, bool verbose=false);
 		//this is useful when the user just wants to deal with the good traces.
 		//this reduces the data size.
 		TimeSeriesEnsemble exclude_false_traces(TimeSeriesEnsemble& d);
@@ -358,7 +358,7 @@ class TraceEditOperator
 					TimeWindow xcor_twin,double xcorcoe_min);
 		set<long> kill_low_RFQualityIndex_traces(TimeSeriesEnsemble& tse,
 					double a1, double a2, double a3, 
-					double qi_min,bool normalize);
+					double qi_min,bool normalize=true);
 		//set all traces back to live.
 		//Currently, for some unknown reason, this causes segment faults in TraceEditPlot.
 		// haven't tried it in other places.

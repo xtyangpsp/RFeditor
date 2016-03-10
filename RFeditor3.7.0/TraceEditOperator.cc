@@ -637,80 +637,80 @@ bool TraceEditOperator::show_metadata(TimeSeriesEnsemble& tse, long evid, bool u
 }
 // extract and save metadata for given trace (with evid) to FILE handle fh.
 //mdversion is set to 1.
-void TraceEditOperator::save_metadata(TimeSeries& ts, FILE * fh, bool use_decon)
-{
-	try
-	{
-		int i,nhdrs(0),mdversion(1);
-		int niteration(-99),nspike(-99);
-		double stw(-9999.0), rtxc(-9999.0),epsilon(-9999.0),
-				peakamp(-9999.0),averamp(-9999.0),rawsnr(-9999.0),
-				rfqi(-9999.0),dsi(-9999.0);
-		if(ts.is_attribute_set(SEISPP::stack_weight_keyword))
-			stw=ts.get_double(SEISPP::stack_weight_keyword);
-		else
-			cerr<<"Warning: stack weight keyword not set! Save default."<<endl;
-		if(ts.is_attribute_set(xcorcoekey))
-			rtxc=ts.get_double(xcorcoekey);
-		else
-			cerr<<"Warning: ref trace xcorcoe keyword not set! Save default."<<endl;
-		if(use_decon)
-		{
-			if(ts.is_attribute_set(decon_success_index_key))
-				dsi=ts.get_double(decon_success_index_key);
-			else
-			{
-            	dsi=compute_decon_success_index(ts);
-			}
-			try{
-				niteration=ts.get_int(decon_niteration_key);
-				nspike=ts.get_int(decon_nspike_key);
-				epsilon=ts.get_double(decon_epsilon_key);
-				peakamp=ts.get_double(decon_peakamp_key);
-				averamp=ts.get_double(decon_averamp_key);
-				rawsnr=ts.get_double(decon_rawsnr_key);
-			}catch(...){cerr<<"Warning: error in extracting decon parameters!"<<endl;};
-		}
-		/*
-		string killedmethod("-");
-		if(ts.is_attribute_set(killed_trace_key))
-			if(ts.get_bool(killed_trace_key))
-			{	
-				if(ts.is_attribute_set(killmethodkey))
-					killedmethod=ts.get_string(killmethodkey);
-			}
-		*/
-		if(ts.is_attribute_set(RF_quality_index_key))
-			rfqi=ts.get_double(RF_quality_index_key);
-		string sta=ts.get_string("sta");
-		string start_time=strtime(ts.get_double("time"));
-		int evid=ts.get_int(evidkey);
-		double t0=ts.t0;
-		double dt=ts.dt;
-		int nsamp=ts.get_int("nsamp");
-		
-		//save to fh.
-		fprintf(fh,"station            : %s\n",sta.c_str());
-		fprintf(fh,"start_time         : %s\n",start_time.c_str());
-		fprintf(fh,"evid               : %10d\n",evid);
-		fprintf(fh,"samples            : %10d\n",nsamp);
-		fprintf(fh,"dt                 : %10.6f\n",dt);
-		fprintf(fh,"t0                 : %10.6f\n",t0);
-		fprintf(fh,"stack_weight       : %7.4f\n",stw);
-		fprintf(fh,"RT_xcorcoe         : %7.4f\n",rtxc);
-		fprintf(fh,"RFQualityIndex     : %7.4f\n",rfqi);
-		fprintf(fh,"DeconSuccessIndex  : %7.4f\n",dsi);
-		fprintf(fh,"niteration         : %10d\n",niteration);
-		fprintf(fh,"nspike             : %10d\n",nspike);
-		fprintf(fh,"epsilon            : %10.5f\n",epsilon);
-		fprintf(fh,"peakamp            : %10.5f\n",peakamp);
-		fprintf(fh,"averamp            : %10.5f\n",averamp);
-		fprintf(fh,"rawsnr             : %10.5f\n",rawsnr);
-	}catch(SeisppError& serr)
-	{
-		serr.what();
-	}
-}
+// void TraceEditOperator::save_metadata(TimeSeries& ts, FILE * fh, bool use_decon)
+// {
+// 	try
+// 	{
+// 		int i,nhdrs(0),mdversion(1);
+// 		int niteration(-99),nspike(-99);
+// 		double stw(-9999.0), rtxc(-9999.0),epsilon(-9999.0),
+// 				peakamp(-9999.0),averamp(-9999.0),rawsnr(-9999.0),
+// 				rfqi(-9999.0),dsi(-9999.0);
+// 		if(ts.is_attribute_set(SEISPP::stack_weight_keyword))
+// 			stw=ts.get_double(SEISPP::stack_weight_keyword);
+// 		else
+// 			cerr<<"Warning: stack weight keyword not set! Save default."<<endl;
+// 		if(ts.is_attribute_set(xcorcoekey))
+// 			rtxc=ts.get_double(xcorcoekey);
+// 		else
+// 			cerr<<"Warning: ref trace xcorcoe keyword not set! Save default."<<endl;
+// 		if(use_decon)
+// 		{
+// 			if(ts.is_attribute_set(decon_success_index_key))
+// 				dsi=ts.get_double(decon_success_index_key);
+// 			else
+// 			{
+//             	dsi=compute_decon_success_index(ts);
+// 			}
+// 			try{
+// 				niteration=ts.get_int(decon_niteration_key);
+// 				nspike=ts.get_int(decon_nspike_key);
+// 				epsilon=ts.get_double(decon_epsilon_key);
+// 				peakamp=ts.get_double(decon_peakamp_key);
+// 				averamp=ts.get_double(decon_averamp_key);
+// 				rawsnr=ts.get_double(decon_rawsnr_key);
+// 			}catch(...){cerr<<"Warning: error in extracting decon parameters!"<<endl;};
+// 		}
+// 		/*
+// 		string killedmethod("-");
+// 		if(ts.is_attribute_set(killed_trace_key))
+// 			if(ts.get_bool(killed_trace_key))
+// 			{	
+// 				if(ts.is_attribute_set(killmethodkey))
+// 					killedmethod=ts.get_string(killmethodkey);
+// 			}
+// 		*/
+// 		if(ts.is_attribute_set(RF_quality_index_key))
+// 			rfqi=ts.get_double(RF_quality_index_key);
+// 		string sta=ts.get_string("sta");
+// 		string start_time=strtime(ts.get_double("time"));
+// 		int evid=ts.get_int(evidkey);
+// 		double t0=ts.t0;
+// 		double dt=ts.dt;
+// 		int nsamp=ts.get_int("nsamp");
+// 		
+// 		//save to fh.
+// 		fprintf(fh,"station            : %s\n",sta.c_str());
+// 		fprintf(fh,"start_time         : %s\n",start_time.c_str());
+// 		fprintf(fh,"evid               : %10d\n",evid);
+// 		fprintf(fh,"samples            : %10d\n",nsamp);
+// 		fprintf(fh,"dt                 : %10.6f\n",dt);
+// 		fprintf(fh,"t0                 : %10.6f\n",t0);
+// 		fprintf(fh,"stack_weight       : %7.4f\n",stw);
+// 		fprintf(fh,"RT_xcorcoe         : %7.4f\n",rtxc);
+// 		fprintf(fh,"RFQualityIndex     : %7.4f\n",rfqi);
+// 		fprintf(fh,"DeconSuccessIndex  : %7.4f\n",dsi);
+// 		fprintf(fh,"niteration         : %10d\n",niteration);
+// 		fprintf(fh,"nspike             : %10d\n",nspike);
+// 		fprintf(fh,"epsilon            : %10.5f\n",epsilon);
+// 		fprintf(fh,"peakamp            : %10.5f\n",peakamp);
+// 		fprintf(fh,"averamp            : %10.5f\n",averamp);
+// 		fprintf(fh,"rawsnr             : %10.5f\n",rawsnr);
+// 	}catch(SeisppError& serr)
+// 	{
+// 		serr.what();
+// 	}
+// }
 // extract and save metadata for given trace (with evid) to FILE handle fh.
 // mdversion: metadata version, currently supports 1, 2.
 void TraceEditOperator::save_metadata(TimeSeries& ts, FILE * fh, bool use_decon, int mdversion)
