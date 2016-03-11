@@ -23,9 +23,9 @@ const string stackstaname("stack");
 const string evidkey("eventid");   // not evid to avoid collision
 const string tracetype_3c("3C"), tracetype_1c("1C");
 /* Modification History */
-void history()
+void history_old()
 {
-	cout<<"Full Detailed Modification History:"
+	cout<<"***** Full Detailed Modification History (older versions) *****"<<endl
 <<">> Jan 2015-Feb 2015 Xiaotao Yang "<<endl
 	<<"1. add option to continue or terminate after each event following Gary's suggestion."<<endl
 	<<"2. add option in augument for stack type: -st b|m|r. only r is working for now. "<<endl
@@ -85,6 +85,12 @@ void history()
 	<<" (1) read optional outdir and summary file name from command line arguments."<<endl
 <<">> 12/04/2015 XT Yang"<<endl
 	<<" (1) fixed the bug that when arrival table is not used, the program still was trying to read arrival when computing post edit FA information."<<endl
+	<<endl;
+}
+
+void history_current()
+{
+	cout<<"***** Modification History for version: 3.7.x *****"<<endl
 <<">> 12/31/2015 XT Yang"<<endl
 	<<" (1) added option to use netmag table in sorting traces."<<endl
 	<<" (2) upgraded metadata version/speficier to 2 (added magnitude attributes) when saving trace to file."<<endl
@@ -93,14 +99,18 @@ void history()
 	<<"     The stack weight is set to 1.0. The only one trace is assigned to the stacked trace."<<endl
 <<">> 03/10/2016 XT Yang"<<endl
 	<<" (1) klsw and klxcor are now iterative."<<endl
+<<">> 03/11/2016 XT Yang"<<endl
+	<<" (1) option of read xcor window from pf in GUI mode."<<endl
+	<<" (2) show seaz in metadata."<<endl
+	<<" (3) built Tools menu, moved Statistics to Tools menu from Help menu."<<endl
+	<<" (4) renamed a few menu labels."<<endl
+	<<" (5) turn on continue mode in argument: -continue."<<endl
 	<<endl;
-		
-		exit(0);
 }
 
 void version()
 {
-	cerr <<"< version 3.7.0.2 > 3/10/2016"<<endl;
+	cerr <<"< version 3.7.0.3 > 3/11/2016"<<endl;
 }
 void author()
 {
@@ -109,8 +119,9 @@ void author()
 void usage_message()
 {
     version();
-    cerr << "RFeditor dbin dbout [-d outdir][-tredit filename][--review-mode|-rm][--gui-off|-go] [--first-arrival|-fa fa_filename][-pf pffile][-laststa xx][-ss subset_condition][-v|V][-h|-H]"<<endl;
-    cerr << "** Use -h|-H to print out detailed explanations on the options."<<endl;
+    cerr << "RFeditor dbin dbout [-d outdir][-tredit filename][-rm][-go] "<<endl
+    	 << "[-fa fa_filename][-pf pffile][-laststa xx][-ss subset_condition][-v|V][-h|H]"<<endl;
+    cerr << "** Use -h to print out detailed explanations on the options."<<endl;
     author();
 }
 void help()
@@ -118,23 +129,34 @@ void help()
 	usage_message();
 	cout<<"Options for running mode:"<<endl
     	<<"--review-mode|rm    :"<<endl
-    	<<"        Edits will be dropped without saving to the database."<<endl
+    	<<"    Edits will be dropped without saving to the database."<<endl
     	<<"--gui-off|-go       :"<<endl
-    	<<"        In GUI-off mode, the program does editings without plotting the data."<<endl
-    	<<"        The editing parameters are read in from the pf file. This can be also"<<endl
-    	<<"        called auto-mode."<<endl
+    	<<"    In GUI-off mode, the program does editings without plotting the data."<<endl
+    	<<"    The editing parameters are read in from the pf file. This can be also"<<endl
+    	<<"    called auto-mode."<<endl
     	<<"--first-arrival|-fa fa_filename :"<<endl
-    	<<"        In this mode, the first arrival information will be written out into"<<endl
-    	<<"        fa_filename as a plain text file"<<endl;
-    cout<<"Other options:"<<endl
+    	<<"    In this mode, the first arrival information will be written out into"<<endl
+    	<<"    fa_filename as a plain text file"<<endl
     	<<"-d outdir:"<<endl
-    	<<"        Save edited data into outdir, default is RFDateEdited."<<endl
+    	<<"    Save edited data into outdir, default is RFDateEdited."<<endl;
+    	cout<<endl
+    	<<"Other options:"<<endl
     	<<"-tredit filename:"<<endl
-    	<<"        Save copy of the editing summary to file: filename (plain text file). Otherwise only save to db table tredit."<<endl
+    	<<"    Save copy of the editing summary to file: filename (plain text file). "<<endl
+    	<<"    Otherwise only save to db table tredit."<<endl
+    	<<"-continue"<<endl
+    	<<"    Force to turn on continue mode when output db is not empty. "<<endl
+    	<<"    PLEASE check outdb carefully to avoid duplicates."<<endl
     	<<"-laststa xx:"<<endl
-    	<<"        Start from the station after station xx."<<endl
+    	<<"    Start from the station after station xx."<<endl
     	<<"-pf pffile:"<<endl
-    	<<"        Use alternate pf instead of the default: RFeditor.pf."<<endl;
+    	<<"    Use alternate pf instead of the default: RFeditor.pf."<<endl
+    	<<"-v|V:"<<endl
+    	<<"    Run program under verbose mode."<<endl
+    	<<"-history:"<<endl
+    	<<"    Modification history for current major version."<<endl
+    	<<"-history2"<<endl
+    	<<"    Full modification history for all versions including current and older."<<endl;
     exit(0);
 }
 void usage()
@@ -863,7 +885,12 @@ int main(int argc, char **argv)
     		if(sarg=="-h" || sarg=="-H")
     			help();
     		else if(sarg=="-history")
-        		history();
+        	{	history_current();
+        		exit(0);}
+        	else if(sarg=="-history2")
+        	{	history_old();
+        		history_current();
+        		exit(0);}
     		else 
     			usage();
     		break;
@@ -923,6 +950,16 @@ int main(int argc, char **argv)
             if(i>=argc) usage();
             FA_filename=string(argv[i]);
         }
+        else if(sarg=="-continue")
+        {
+        	set_continue_mode_by_default=true; 
+        		/*
+        		//if this is true, the program will continue working on next station 
+        		//when output table is not empty. otherwise, it will ask the user to 
+        		//choose either continue on the next station or quit.
+        		// Xiaotao Yang
+        		*/
+        }
         else if(sarg=="-pf")
         {
             ++i;
@@ -969,7 +1006,12 @@ int main(int argc, char **argv)
         else if(sarg=="-h" || sarg=="-H")
         	help();
         else if(sarg=="-history")
-        	history();
+        {	history_current();
+        	exit(0);}
+        else if(sarg=="-history2")
+        {	history_old();
+        	history_current();
+        	exit(0);}
         else
             usage();
     }
@@ -1155,11 +1197,11 @@ int main(int argc, char **argv)
 			output_channels.push_back(zchan);
         }
         int minrfcutoff=control.get_int("minimum_number_receiver_functions");
-        set_continue_mode_by_default=control.get_bool("set_continue_mode_by_default"); 
+        //set_continue_mode_by_default=control.get_bool("set_continue_mode_by_default"); 
         		/*
         		//if this is true, the program will continue working on next station 
         		//when output table is not empty. otherwise, it will ask the user to 
-        		//choose between continue on the next station or quit.
+        		//choose either continue on the next station or quit.
         		// Xiaotao Yang
         		*/
         bool apply_prefilter=control.get_bool("apply_prefilter");
@@ -1252,7 +1294,7 @@ int main(int argc, char **argv)
 				if(turn_on_continue_mode)
 				{
 					if(SEISPP_verbose) 
-						cout<<"Output table is not empty. Working under continue mode."<<endl;
+						cout<<"!!!Caution: Output table is not empty. Working under continue mode."<<endl;
 					logfile<<"Output table is not empty. Working under continue mode."<<endl;
 					apply_subset=true;
 					if(subset_condition.length()> 0)
@@ -1511,7 +1553,7 @@ int main(int argc, char **argv)
 		{
 			fh_fa=fopen(FA_filename.c_str(),"w");
 			if(use_arrival_data)
-				fprintf(fh_fa,"STA    EVID    START_TIME    FA_LAG    FA_AMPR    ESAZ\n");
+				fprintf(fh_fa,"STA    EVID    START_TIME    FA_LAG    FA_AMPR    SEAZ\n");
 			else
 				fprintf(fh_fa,"STA    EVID    START_TIME    FA_LAG    FA_AMPR\n");
 		}
@@ -1826,7 +1868,7 @@ int main(int argc, char **argv)
 					if(use_arrival_data)
 						fprintf(fh_fa,"%5s   %6d    %15.3f   %6.3f   %8.4f   %6.1f\n",
 							sta.c_str(),evid_tmp,iptr->get_double("time"),
-							FA_lag,FA_amplitude,iptr->get_double("assoc.esaz"));
+							FA_lag,FA_amplitude,iptr->get_double(seaz_key));
 					else
 						fprintf(fh_fa,"%5s   %6d    %15.3f   %6.3f   %8.4f\n",
 							sta.c_str(),evid_tmp,iptr->get_double("time"),
@@ -1923,7 +1965,7 @@ int main(int argc, char **argv)
 							if(use_arrival_data)
 								fprintf(fh_fa,"%5s   %6d    %15.3f   %6.3f   %8.4f   %6.1f\n",
 									sta.c_str(),evid_tmp,iptr->get_double("time"),
-									FA_lag,FA_amplitude,iptr->get_double("assoc.esaz"));
+									FA_lag,FA_amplitude,iptr->get_double(seaz_key));
 							else
 								fprintf(fh_fa,"%5s   %6d    %15.3f   %6.3f   %8.4f\n",
 									sta.c_str(),evid_tmp,iptr->get_double("time"),
