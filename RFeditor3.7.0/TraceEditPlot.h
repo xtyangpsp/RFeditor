@@ -189,8 +189,9 @@ private:
     Widget menu_edit;
     Widget menu_view;
     Widget menu_sort;
-    Widget menu_filter;
+    //Widget menu_filter;
     Widget menu_help;
+    Widget menu_tools;
     /* These two private methods are used to allow common code for
        constructors. */
     void edit_enable();
@@ -198,8 +199,9 @@ private:
     void build_edit_menu();
     void build_view_menu();
     void build_sort_menu();
-    void build_filter_menu();
+    //void build_filter_menu();
     void build_help_menu();
+    void build_tools_menu();
     /* This is used by Seisw widget.  1 for single trace edit mode
        set 2 for cutoff mode 
        NOTE by Xiaotao Yang: other values mean to disable edit.
