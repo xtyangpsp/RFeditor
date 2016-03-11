@@ -601,6 +601,9 @@ bool TraceEditOperator::show_metadata(TimeSeriesEnsemble& tse, long evid, bool u
 		if(ts_tmp.is_attribute_set(magtype_key))
 		{cerr<<"magtype       : "<<ts_tmp.get_string(magtype_key)<<endl;}
 		
+		//debug
+		if(ts_tmp.is_attribute_set(seaz_key))
+		{cerr<<"SEAZ:         : "<<ts_tmp.get_double(seaz_key)<<endl;}
 		cerr<<"Stack weight  : "<<stw<<endl
 			<<"RT XcorCoe    : "<<rtxc<<endl;
 		if(ts_tmp.is_attribute_set(killed_trace_key))

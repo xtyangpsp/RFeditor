@@ -22,6 +22,7 @@ const string killed_trace_key("is_killed_trace");
 const string FA_time_key("RF_FirstArrivalTime");
 const string FA_amplitude_key("RF_FirstArrivalAmplitude");
 const string magnitude_key("magnitude"),magtype_key("magtype");
+const string seaz_key("assoc.seaz");
 /*
 RF Quality Index:
 /RF quality index is defined as: 
