@@ -638,6 +638,8 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
 					{
 						cerr<<"** Only 1 trace or less left in ensemble. Skipped this Statistics-Based kill procedure: klxcor."<<endl;
 						tse_tmp.member.clear();
+						nkill_xcor=0;
+						break;
 					}
 					else
 					{
@@ -686,6 +688,8 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
 					{
 						cerr<<"** Only 1 trace or less left in ensemble. Skipped this Statistics-Based kill procedure: klsw."<<endl;
 						tse_tmp.member.clear();
+						nkill_sw=0;
+						break;
 					}
 					else
 					{
@@ -752,6 +756,7 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
 					{
 						cerr<<"** Only 1 trace or less left in ensemble. Skipped this Statistics-Bsed procedure: klrfqi."<<endl;
 						tse_tmp.member.clear();
+						nkill_rfqi=0;
 						break;
 					}
 					else
