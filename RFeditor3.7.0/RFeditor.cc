@@ -105,12 +105,15 @@ void history_current()
 	<<" (3) built Tools menu, moved Statistics to Tools menu from Help menu."<<endl
 	<<" (4) renamed a few menu labels."<<endl
 	<<" (5) turn on continue mode in argument: -continue."<<endl
+<<">> 03/13/2016 XT Yang"<<endl
+	<<" (1) use tredit table v2 for output table with one line for each method."<<endl
+	<<" (2) moved klsw up one level before klxcor."<<endl
 	<<endl;
 }
 
 void version()
 {
-	cerr <<"< version 3.7.0.3 > 3/11/2016"<<endl;
+	cerr <<"< version 3.7.0.4 > 3/13/2016"<<endl;
 }
 void author()
 {
