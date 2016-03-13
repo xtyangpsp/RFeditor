@@ -95,7 +95,7 @@ void RFeditorEngine::save_statistics_summary(string fname)
 	//delete summary;
 	fclose(fh);
 }
-void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh)
+void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, int treditversion)
 {
 	DatascopeHandle dbtredit(dbh);
 	dbtredit.lookup("tredit");
@@ -107,34 +107,192 @@ void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh)
 	nkilled_auto=summary.get_int(TOTAL_NKILLED_AUTO);
 	nkilled_manual=nkilled - nkilled_auto;
 	double acceptance_rate=100.0*(ntraces - nkilled)/ntraces;
-/* attributes in tredit table.
-sta ntracein nkilled acptrate aknfa aklat aksfa akgpc 
-akca klsw klxcor kdnitn kdnspike kdepsilon kdpkamp kdavamp kdsnr kmanual nrestored
-*/
-	dbtredit.append();
-	dbtredit.put("sta",station);
-	dbtredit.put("ntracein",ntraces);
-	dbtredit.put("nkilled",nkilled);
-	dbtredit.put("acptrate",acceptance_rate);
-	dbtredit.put("aknfa",summary.get_int(AUTOKILL_NegativeFA));
-	dbtredit.put("aklat",summary.get_int(AUTOKILL_LargeAmpTraces));
-	dbtredit.put("aksfa",summary.get_int(AUTOKILL_SmallFA));
-	dbtredit.put("akgpc",summary.get_int(AUTOKILL_GrowingPCoda));
-	dbtredit.put("akca",summary.get_int(AUTOKILL_ClusteredArrivals));
-	dbtredit.put("aklfc",summary.get_int(AUTOKILL_LowFrequencyContaminated));
-	dbtredit.put("klsw",summary.get_int(AUTOKILL_StackWeightCutoff));
-	dbtredit.put("klxcor",summary.get_int(AUTOKILL_RefXcorCutoff));
-	dbtredit.put("kldsi",summary.get_int(AUTOKILL_DSICutoff));
-	dbtredit.put("klrfqi",summary.get_int(AUTOKILL_RFQICutoff));
-	dbtredit.put("kdnitn",summary.get_int(AUTOKILL_DeconNiteration));
-	dbtredit.put("kdnspike",summary.get_int(AUTOKILL_DeconNspike));
-	dbtredit.put("kdepsilon",summary.get_int(AUTOKILL_DeconEpsilon));
-	dbtredit.put("kdpkamp",summary.get_int(AUTOKILL_DeconPeakamp));
-	dbtredit.put("kdavamp",summary.get_int(AUTOKILL_DeconAveramp));
-	dbtredit.put("kdsnr",summary.get_int(AUTOKILL_DeconRawsnr));
-	dbtredit.put("kmanual",nkilled_manual);
-	dbtredit.put("nrestored",summary.get_int(ManualRestore));
 	
+	switch(treditversion)
+	{
+		case 1:
+			/* attributes in tredit table.
+			sta ntracein nkilled acptrate aknfa aklat aksfa akgpc 
+			akca klsw klxcor kdnitn kdnspike kdepsilon kdpkamp kdavamp kdsnr kmanual nrestored
+			*/
+			dbtredit.append();
+			dbtredit.put("sta",station);
+			dbtredit.put("ntracein",ntraces);
+			dbtredit.put("nkilled",nkilled);
+			dbtredit.put("acptrate",acceptance_rate);
+			dbtredit.put("aknfa",summary.get_int(AUTOKILL_NegativeFA));
+			dbtredit.put("aklat",summary.get_int(AUTOKILL_LargeAmpTraces));
+			dbtredit.put("aksfa",summary.get_int(AUTOKILL_SmallFA));
+			dbtredit.put("akgpc",summary.get_int(AUTOKILL_GrowingPCoda));
+			dbtredit.put("akca",summary.get_int(AUTOKILL_ClusteredArrivals));
+			dbtredit.put("aklfc",summary.get_int(AUTOKILL_LowFrequencyContaminated));
+			dbtredit.put("klsw",summary.get_int(AUTOKILL_StackWeightCutoff));
+			dbtredit.put("klxcor",summary.get_int(AUTOKILL_RefXcorCutoff));
+			dbtredit.put("kldsi",summary.get_int(AUTOKILL_DSICutoff));
+			dbtredit.put("klrfqi",summary.get_int(AUTOKILL_RFQICutoff));
+			dbtredit.put("kdnitn",summary.get_int(AUTOKILL_DeconNiteration));
+			dbtredit.put("kdnspike",summary.get_int(AUTOKILL_DeconNspike));
+			dbtredit.put("kdepsilon",summary.get_int(AUTOKILL_DeconEpsilon));
+			dbtredit.put("kdpkamp",summary.get_int(AUTOKILL_DeconPeakamp));
+			dbtredit.put("kdavamp",summary.get_int(AUTOKILL_DeconAveramp));
+			dbtredit.put("kdsnr",summary.get_int(AUTOKILL_DeconRawsnr));
+			dbtredit.put("kmanual",nkilled_manual);
+			dbtredit.put("nrestored",summary.get_int(ManualRestore));
+			break;
+		case 2:
+			/* attributes in tredit table.
+			sta ntracein ntraceout acceptancerate nkilled procedure
+			//procedure: name of the editing method.
+			*/
+			dbtredit.append();
+			dbtredit.put("sta",station);
+			dbtredit.put("ntracein",ntraces);
+			dbtredit.put("ntraceout",ntraces - nkilled);
+			dbtredit.put("acceptancerate",acceptance_rate);
+			dbtredit.put("nkilled",summary.get_int(AUTOKILL_LargeAmpTraces));
+			dbtredit.put("procedure",AUTOKILL_LargeAmpTraces);
+			
+			dbtredit.append();
+			dbtredit.put("sta",station);
+			dbtredit.put("ntracein",ntraces);
+			dbtredit.put("ntraceout",ntraces - nkilled);
+			dbtredit.put("acceptancerate",acceptance_rate);
+			dbtredit.put("nkilled",summary.get_int(AUTOKILL_DeconNiteration));
+			dbtredit.put("procedure",AUTOKILL_DeconNiteration);
+			
+			dbtredit.append();
+			dbtredit.put("sta",station);
+			dbtredit.put("ntracein",ntraces);
+			dbtredit.put("ntraceout",ntraces - nkilled);
+			dbtredit.put("acceptancerate",acceptance_rate);
+			dbtredit.put("nkilled",summary.get_int(AUTOKILL_DeconNspike));
+			dbtredit.put("procedure",AUTOKILL_DeconNspike);
+			
+			dbtredit.append();
+			dbtredit.put("sta",station);
+			dbtredit.put("ntracein",ntraces);
+			dbtredit.put("ntraceout",ntraces - nkilled);
+			dbtredit.put("acceptancerate",acceptance_rate);
+			dbtredit.put("nkilled",summary.get_int(AUTOKILL_DeconEpsilon));
+			dbtredit.put("procedure",AUTOKILL_DeconEpsilon);
+			
+			dbtredit.append();
+			dbtredit.put("sta",station);
+			dbtredit.put("ntracein",ntraces);
+			dbtredit.put("ntraceout",ntraces - nkilled);
+			dbtredit.put("acceptancerate",acceptance_rate);
+			dbtredit.put("nkilled",summary.get_int(AUTOKILL_DeconPeakamp));
+			dbtredit.put("procedure",AUTOKILL_DeconPeakamp);
+			
+			dbtredit.append();
+			dbtredit.put("sta",station);
+			dbtredit.put("ntracein",ntraces);
+			dbtredit.put("ntraceout",ntraces - nkilled);
+			dbtredit.put("acceptancerate",acceptance_rate);
+			dbtredit.put("nkilled",summary.get_int(AUTOKILL_DeconAveramp));
+			dbtredit.put("procedure",AUTOKILL_DeconAveramp);
+			
+			dbtredit.append();
+			dbtredit.put("sta",station);
+			dbtredit.put("ntracein",ntraces);
+			dbtredit.put("ntraceout",ntraces - nkilled);
+			dbtredit.put("acceptancerate",acceptance_rate);
+			dbtredit.put("nkilled",summary.get_int(AUTOKILL_DeconRawsnr));
+			dbtredit.put("procedure",AUTOKILL_DeconRawsnr);
+			
+			dbtredit.append();
+			dbtredit.put("sta",station);
+			dbtredit.put("ntracein",ntraces);
+			dbtredit.put("ntraceout",ntraces - nkilled);
+			dbtredit.put("acceptancerate",acceptance_rate);
+			dbtredit.put("nkilled",summary.get_int(AUTOKILL_DSICutoff));
+			dbtredit.put("procedure",AUTOKILL_DSICutoff);
+			
+			dbtredit.append();
+			dbtredit.put("sta",station);
+			dbtredit.put("ntracein",ntraces);
+			dbtredit.put("ntraceout",ntraces - nkilled);
+			dbtredit.put("acceptancerate",acceptance_rate);
+			dbtredit.put("nkilled",summary.get_int(AUTOKILL_NegativeFA));
+			dbtredit.put("procedure",AUTOKILL_NegativeFA);
+			
+			dbtredit.append();
+			dbtredit.put("sta",station);
+			dbtredit.put("ntracein",ntraces);
+			dbtredit.put("ntraceout",ntraces - nkilled);
+			dbtredit.put("acceptancerate",acceptance_rate);
+			dbtredit.put("nkilled",summary.get_int(AUTOKILL_GrowingPCoda));
+			dbtredit.put("procedure",AUTOKILL_GrowingPCoda);
+			
+			dbtredit.append();
+			dbtredit.put("sta",station);
+			dbtredit.put("ntracein",ntraces);
+			dbtredit.put("ntraceout",ntraces - nkilled);
+			dbtredit.put("acceptancerate",acceptance_rate);
+			dbtredit.put("nkilled",summary.get_int(AUTOKILL_ClusteredArrivals));
+			dbtredit.put("procedure",AUTOKILL_ClusteredArrivals);
+			
+			dbtredit.append();
+			dbtredit.put("sta",station);
+			dbtredit.put("ntracein",ntraces);
+			dbtredit.put("ntraceout",ntraces - nkilled);
+			dbtredit.put("acceptancerate",acceptance_rate);
+			dbtredit.put("nkilled",summary.get_int(AUTOKILL_SmallFA));
+			dbtredit.put("procedure",AUTOKILL_SmallFA);
+			
+			dbtredit.append();
+			dbtredit.put("sta",station);
+			dbtredit.put("ntracein",ntraces);
+			dbtredit.put("ntraceout",ntraces - nkilled);
+			dbtredit.put("acceptancerate",acceptance_rate);
+			dbtredit.put("nkilled",summary.get_int(AUTOKILL_LowFrequencyContaminated));
+			dbtredit.put("procedure",AUTOKILL_LowFrequencyContaminated);
+			
+			dbtredit.append();
+			dbtredit.put("sta",station);
+			dbtredit.put("ntracein",ntraces);
+			dbtredit.put("ntraceout",ntraces - nkilled);
+			dbtredit.put("acceptancerate",acceptance_rate);
+			dbtredit.put("nkilled",summary.get_int(AUTOKILL_StackWeightCutoff));
+			dbtredit.put("procedure",AUTOKILL_StackWeightCutoff);
+			
+			dbtredit.append();
+			dbtredit.put("sta",station);
+			dbtredit.put("ntracein",ntraces);
+			dbtredit.put("ntraceout",ntraces - nkilled);
+			dbtredit.put("acceptancerate",acceptance_rate);
+			dbtredit.put("nkilled",summary.get_int(AUTOKILL_RefXcorCutoff));
+			dbtredit.put("procedure",AUTOKILL_RefXcorCutoff);
+			
+			dbtredit.append();
+			dbtredit.put("sta",station);
+			dbtredit.put("ntracein",ntraces);
+			dbtredit.put("ntraceout",ntraces - nkilled);
+			dbtredit.put("acceptancerate",acceptance_rate);
+			dbtredit.put("nkilled",summary.get_int(AUTOKILL_RFQICutoff));
+			dbtredit.put("procedure",AUTOKILL_RFQICutoff);
+			
+			dbtredit.append();
+			dbtredit.put("sta",station);
+			dbtredit.put("ntracein",ntraces);
+			dbtredit.put("ntraceout",ntraces - nkilled);
+			dbtredit.put("acceptancerate",acceptance_rate);
+			dbtredit.put("nkilled",nkilled_manual);
+			dbtredit.put("procedure","ManualEdit");
+			
+			dbtredit.append();
+			dbtredit.put("sta",station);
+			dbtredit.put("ntracein",ntraces);
+			dbtredit.put("ntraceout",ntraces - nkilled);
+			dbtredit.put("acceptancerate",acceptance_rate);
+			dbtredit.put("nkilled",summary.get_int(ManualRestore));
+			dbtredit.put("procedure",ManualRestore);
+
+			break;
+		default:
+			cerr<<"ERROR in save_statistics_summary(): unknown treditversion, should only be 1 or 2."<<endl;
+			exit(-1);
+	}
 	//delete summary;
 }
 //int RFeditorEngine::edit(TimeSeriesEnsemble& rd, TimeSeriesEnsemble& td)
@@ -623,6 +781,54 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
 				//DEBUG
 				//cout<<"ref_trace_xcor_twin set."<<endl;
 			}
+
+			if(apply_klsw)
+			{
+				min_stackweight=md.get_double("stackweight_min");
+				//iteratively apply klsw
+				long nkill_sw(tse.member.size());// initialize nkill as the ensemble size.
+				int itn(1);
+				while (nkill_sw>0)
+				{
+					TimeSeriesEnsemble tse_tmp=teo->exclude_false_traces(tse);
+					if(tse_tmp.member.size()<=1)
+					{
+						cerr<<"** Only 1 trace or less left in ensemble. Skipped this Statistics-Based kill procedure: klsw."<<endl;
+						tse_tmp.member.clear();
+						nkill_sw=0;
+						break;
+					}
+					else
+					{
+						TimeWindow stw=teo->find_common_timewindow(tse_tmp);
+						//DEBUG
+						//cout<<stw.start<<", "<<stw.end<<endl;
+						if(robust_twin.start < stw.start || robust_twin.end > stw.end)
+						{
+							cerr<<"**Error in applying klsw (GUIoff): robust timewindow is bigger than stack timewindow."<<endl;
+							exit(-1);
+						}
+						try{
+						teo->get_stack(tse_tmp,stw, 
+							robust_twin, stacktype);
+						}catch(SeisppError& serr)
+						{cerr<<"**Error when getting stack trace!"<<endl; serr.what();exit(-1);}
+						killtmp=teo->kill_low_stackweight_traces(tse_tmp,min_stackweight);
+						nkill_sw=killtmp.size();
+							cerr<<"Number of traces killed by applying sw (iteration "<<itn
+								<<" ) = "<<nkill_sw<<endl;
+						if(nkill_sw>0)
+						{
+							rkills0.insert(killtmp.begin(),killtmp.end());
+							teo->apply_kills(tse,killtmp);
+						}
+						itn++;
+						tse_tmp.member.clear();
+						killtmp.clear();
+					}
+				}
+			}
+
 			if(apply_klxcor)
 			{
 				cerr<<"**Caution: in GUIoff mode, stack trace is used as the reference trace."<<endl;
@@ -673,52 +879,6 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
 						ts_tmp.s.clear();
 						killtmp.clear();
 					}	
-				}
-			}
-			if(apply_klsw)
-			{
-				min_stackweight=md.get_double("stackweight_min");
-				//iteratively apply klsw
-				long nkill_sw(tse.member.size());// initialize nkill as the ensemble size.
-				int itn(1);
-				while (nkill_sw>0)
-				{
-					TimeSeriesEnsemble tse_tmp=teo->exclude_false_traces(tse);
-					if(tse_tmp.member.size()<=1)
-					{
-						cerr<<"** Only 1 trace or less left in ensemble. Skipped this Statistics-Based kill procedure: klsw."<<endl;
-						tse_tmp.member.clear();
-						nkill_sw=0;
-						break;
-					}
-					else
-					{
-						TimeWindow stw=teo->find_common_timewindow(tse_tmp);
-						//DEBUG
-						//cout<<stw.start<<", "<<stw.end<<endl;
-						if(robust_twin.start < stw.start || robust_twin.end > stw.end)
-						{
-							cerr<<"**Error in applying klsw (GUIoff): robust timewindow is bigger than stack timewindow."<<endl;
-							exit(-1);
-						}
-						try{
-						teo->get_stack(tse_tmp,stw, 
-							robust_twin, stacktype);
-						}catch(SeisppError& serr)
-						{cerr<<"**Error when getting stack trace!"<<endl; serr.what();exit(-1);}
-						killtmp=teo->kill_low_stackweight_traces(tse_tmp,min_stackweight);
-						nkill_sw=killtmp.size();
-							cerr<<"Number of traces killed by applying sw (iteration "<<itn
-								<<" ) = "<<nkill_sw<<endl;
-						if(nkill_sw>0)
-						{
-							rkills0.insert(killtmp.begin(),killtmp.end());
-							teo->apply_kills(tse,killtmp);
-						}
-						itn++;
-						tse_tmp.member.clear();
-						killtmp.clear();
-					}
 				}
 			}
 

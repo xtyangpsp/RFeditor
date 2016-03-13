@@ -1989,7 +1989,7 @@ int main(int argc, char **argv)
 						rfe->save_statistics_summary(editsummaryfname);
 					}
 					//save statistics to db table: tredit.
-					rfe->save_statistics_summary(dbout);
+					rfe->save_statistics_summary(dbout,2);
 					//reset is required to avoiding duplicate/accumulated statistical information.
 					rfe->reset_statistics();
 					//starting saving waveform data.

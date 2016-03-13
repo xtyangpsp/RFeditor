@@ -59,7 +59,7 @@ class RFeditorEngine
         //save statistical information to file: fname.
         void save_statistics(string fname);
         void save_statistics_summary(string fname);
-        void save_statistics_summary(DatascopeHandle& dbh);
+        void save_statistics_summary(DatascopeHandle& dbh, int treditversion=1);
         void reset_statistics()
         {if(!GUIoff) Rwindow->teo_global.reset_statistics();
         	else this->teo->reset_statistics();};
