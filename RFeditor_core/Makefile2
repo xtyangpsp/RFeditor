@@ -1,0 +1,26 @@
+BIN=RFeditor
+MAN1=RFeditor.1
+PF=RFeditor.pf
+DATADIR=schemas/css3.0.ext
+DATA=tredit decon
+SUBDIR=/contrib
+
+ldlibs=-lseispp -lbrttutil $(TRLIBS) $(DBLIBS) -L$(XMOTIFLIB) \
+       -L$(BOOSTLIB) -lboost_thread -lboost_system -lseisw -L/Users/xtyang/usr/local/lib -lgsl \
+       -lXm -lXt -lperf -lgclgrid $(X11LIBS)
+
+ANTELOPEMAKELOCAL = $(ANTELOPE)/contrib/include/antelopemake.local
+include $(ANTELOPEMAKE)  	
+include $(ANTELOPEMAKELOCAL)
+
+CXXFLAGS += -I$(XMOTIFINCLUDE)
+CXXFLAGS += -I$(BOOSTINCLUDE)
+CXXFLAGS += -I/Users/xtyang/usr/local/include
+
+LDLIBS += -L$(BOOSTLIB) -L/Users/xtyang/usr/local/lib
+# for valgrind only
+CXXFLAGS += -g
+OBJS=RFeditor.o RFeditorEngine.o TraceEditOperator.o SeismicPlot.o TimeWindowPicker.o
+$(BIN) : $(OBJS)
+	$(RM) $@
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)
