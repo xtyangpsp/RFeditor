@@ -108,12 +108,16 @@ void history_current()
 <<">> 03/13/2016 XT Yang"<<endl
 	<<" (1) use tredit table v2 for output table with one line for each method."<<endl
 	<<" (2) moved klsw up one level before klxcor."<<endl
+<<">> 03/14/2016 XT Yang"<<endl
+	<<" (1) updated tredit v2 table and corresponding routines by adding 'version' entry."<<endl
 	<<endl;
 }
 
+const string csversion("v3.7.0.4");
+
 void version()
 {
-	cerr <<"< version 3.7.0.4 > 3/13/2016"<<endl;
+	cerr <<"< version "<<csversion<<" > 3/14/2016"<<endl;
 }
 void author()
 {
@@ -1989,10 +1993,10 @@ int main(int argc, char **argv)
 					////save edit statistics information first.
 					if(save_edit_summary_to_file)
 					{
-						rfe->save_statistics_summary(editsummaryfname);
+						rfe->save_statistics_summary(editsummaryfname,csversion);
 					}
 					//save statistics to db table: tredit.
-					rfe->save_statistics_summary(dbout,2);
+					rfe->save_statistics_summary(dbout,2,csversion);
 					//reset is required to avoiding duplicate/accumulated statistical information.
 					rfe->reset_statistics();
 					//starting saving waveform data.

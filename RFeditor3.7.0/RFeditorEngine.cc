@@ -54,7 +54,7 @@ void RFeditorEngine::save_statistics(string fname)
 	else
 		teo->report_statistics(fname);
 }
-void RFeditorEngine::save_statistics_summary(string fname)
+void RFeditorEngine::save_statistics_summary(string fname, string rfe_version)
 {
 	FILE * fh=fopen(fname.c_str(),"a");
 	Metadata summary;
@@ -68,7 +68,7 @@ void RFeditorEngine::save_statistics_summary(string fname)
 	}
 	nkilled_auto=summary.get_int(TOTAL_NKILLED_AUTO);
 	nkilled_manual=nkilled - nkilled_auto;
-	fprintf(fh,"$--- Summary for station [ %s ] ---$\n",station.c_str());
+	fprintf(fh,"$--- Summary for station [ %s ] -< %s >--$\n",station.c_str(),rfe_version.c_str());
 	fprintf(fh,"Input-Traces                %10d\n",ntraces);
 	fprintf(fh,"Auto-Killed                %10d\n",nkilled_auto);
 	fprintf(fh,"Manual-Killed              %10d\n",nkilled_manual);
@@ -95,7 +95,8 @@ void RFeditorEngine::save_statistics_summary(string fname)
 	//delete summary;
 	fclose(fh);
 }
-void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, int treditversion)
+void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, 
+		int treditversion, string rfe_version)
 {
 	DatascopeHandle dbtredit(dbh);
 	dbtredit.lookup("tredit");
@@ -151,6 +152,7 @@ void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, int treditver
 			dbtredit.put("acceptancerate",acceptance_rate);
 			dbtredit.put("nkilled",summary.get_int(AUTOKILL_LargeAmpTraces));
 			dbtredit.put("procedure",AUTOKILL_LargeAmpTraces);
+			dbtredit.put("version",rfe_version);
 			
 			dbtredit.append();
 			dbtredit.put("sta",station);
@@ -159,6 +161,7 @@ void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, int treditver
 			dbtredit.put("acceptancerate",acceptance_rate);
 			dbtredit.put("nkilled",summary.get_int(AUTOKILL_DeconNiteration));
 			dbtredit.put("procedure",AUTOKILL_DeconNiteration);
+			dbtredit.put("version",rfe_version);
 			
 			dbtredit.append();
 			dbtredit.put("sta",station);
@@ -167,6 +170,7 @@ void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, int treditver
 			dbtredit.put("acceptancerate",acceptance_rate);
 			dbtredit.put("nkilled",summary.get_int(AUTOKILL_DeconNspike));
 			dbtredit.put("procedure",AUTOKILL_DeconNspike);
+			dbtredit.put("version",rfe_version);
 			
 			dbtredit.append();
 			dbtredit.put("sta",station);
@@ -175,6 +179,7 @@ void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, int treditver
 			dbtredit.put("acceptancerate",acceptance_rate);
 			dbtredit.put("nkilled",summary.get_int(AUTOKILL_DeconEpsilon));
 			dbtredit.put("procedure",AUTOKILL_DeconEpsilon);
+			dbtredit.put("version",rfe_version);
 			
 			dbtredit.append();
 			dbtredit.put("sta",station);
@@ -183,6 +188,7 @@ void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, int treditver
 			dbtredit.put("acceptancerate",acceptance_rate);
 			dbtredit.put("nkilled",summary.get_int(AUTOKILL_DeconPeakamp));
 			dbtredit.put("procedure",AUTOKILL_DeconPeakamp);
+			dbtredit.put("version",rfe_version);
 			
 			dbtredit.append();
 			dbtredit.put("sta",station);
@@ -191,6 +197,7 @@ void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, int treditver
 			dbtredit.put("acceptancerate",acceptance_rate);
 			dbtredit.put("nkilled",summary.get_int(AUTOKILL_DeconAveramp));
 			dbtredit.put("procedure",AUTOKILL_DeconAveramp);
+			dbtredit.put("version",rfe_version);
 			
 			dbtredit.append();
 			dbtredit.put("sta",station);
@@ -199,6 +206,7 @@ void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, int treditver
 			dbtredit.put("acceptancerate",acceptance_rate);
 			dbtredit.put("nkilled",summary.get_int(AUTOKILL_DeconRawsnr));
 			dbtredit.put("procedure",AUTOKILL_DeconRawsnr);
+			dbtredit.put("version",rfe_version);
 			
 			dbtredit.append();
 			dbtredit.put("sta",station);
@@ -207,6 +215,7 @@ void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, int treditver
 			dbtredit.put("acceptancerate",acceptance_rate);
 			dbtredit.put("nkilled",summary.get_int(AUTOKILL_DSICutoff));
 			dbtredit.put("procedure",AUTOKILL_DSICutoff);
+			dbtredit.put("version",rfe_version);
 			
 			dbtredit.append();
 			dbtredit.put("sta",station);
@@ -215,6 +224,7 @@ void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, int treditver
 			dbtredit.put("acceptancerate",acceptance_rate);
 			dbtredit.put("nkilled",summary.get_int(AUTOKILL_NegativeFA));
 			dbtredit.put("procedure",AUTOKILL_NegativeFA);
+			dbtredit.put("version",rfe_version);
 			
 			dbtredit.append();
 			dbtredit.put("sta",station);
@@ -223,6 +233,7 @@ void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, int treditver
 			dbtredit.put("acceptancerate",acceptance_rate);
 			dbtredit.put("nkilled",summary.get_int(AUTOKILL_GrowingPCoda));
 			dbtredit.put("procedure",AUTOKILL_GrowingPCoda);
+			dbtredit.put("version",rfe_version);
 			
 			dbtredit.append();
 			dbtredit.put("sta",station);
@@ -231,6 +242,7 @@ void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, int treditver
 			dbtredit.put("acceptancerate",acceptance_rate);
 			dbtredit.put("nkilled",summary.get_int(AUTOKILL_ClusteredArrivals));
 			dbtredit.put("procedure",AUTOKILL_ClusteredArrivals);
+			dbtredit.put("version",rfe_version);
 			
 			dbtredit.append();
 			dbtredit.put("sta",station);
@@ -239,6 +251,7 @@ void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, int treditver
 			dbtredit.put("acceptancerate",acceptance_rate);
 			dbtredit.put("nkilled",summary.get_int(AUTOKILL_SmallFA));
 			dbtredit.put("procedure",AUTOKILL_SmallFA);
+			dbtredit.put("version",rfe_version);
 			
 			dbtredit.append();
 			dbtredit.put("sta",station);
@@ -247,6 +260,7 @@ void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, int treditver
 			dbtredit.put("acceptancerate",acceptance_rate);
 			dbtredit.put("nkilled",summary.get_int(AUTOKILL_LowFrequencyContaminated));
 			dbtredit.put("procedure",AUTOKILL_LowFrequencyContaminated);
+			dbtredit.put("version",rfe_version);
 			
 			dbtredit.append();
 			dbtredit.put("sta",station);
@@ -255,6 +269,7 @@ void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, int treditver
 			dbtredit.put("acceptancerate",acceptance_rate);
 			dbtredit.put("nkilled",summary.get_int(AUTOKILL_StackWeightCutoff));
 			dbtredit.put("procedure",AUTOKILL_StackWeightCutoff);
+			dbtredit.put("version",rfe_version);
 			
 			dbtredit.append();
 			dbtredit.put("sta",station);
@@ -263,6 +278,7 @@ void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, int treditver
 			dbtredit.put("acceptancerate",acceptance_rate);
 			dbtredit.put("nkilled",summary.get_int(AUTOKILL_RefXcorCutoff));
 			dbtredit.put("procedure",AUTOKILL_RefXcorCutoff);
+			dbtredit.put("version",rfe_version);
 			
 			dbtredit.append();
 			dbtredit.put("sta",station);
@@ -271,6 +287,7 @@ void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, int treditver
 			dbtredit.put("acceptancerate",acceptance_rate);
 			dbtredit.put("nkilled",summary.get_int(AUTOKILL_RFQICutoff));
 			dbtredit.put("procedure",AUTOKILL_RFQICutoff);
+			dbtredit.put("version",rfe_version);
 			
 			dbtredit.append();
 			dbtredit.put("sta",station);
@@ -279,6 +296,7 @@ void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, int treditver
 			dbtredit.put("acceptancerate",acceptance_rate);
 			dbtredit.put("nkilled",nkilled_manual);
 			dbtredit.put("procedure","ManualEdit");
+			dbtredit.put("version",rfe_version);
 			
 			dbtredit.append();
 			dbtredit.put("sta",station);
@@ -287,6 +305,7 @@ void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh, int treditver
 			dbtredit.put("acceptancerate",acceptance_rate);
 			dbtredit.put("nkilled",summary.get_int(ManualRestore));
 			dbtredit.put("procedure",ManualRestore);
+			dbtredit.put("version",rfe_version);
 
 			break;
 		default:

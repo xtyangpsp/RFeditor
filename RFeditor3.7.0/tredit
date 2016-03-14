@@ -55,13 +55,23 @@ Attribute procedure
 	}
 	;
 
+Attribute version
+	String (20)
+	Format ( "%-20s" )
+	Null ( "-" )
+	Description ( "Version string of the editor engine" )
+	Detail {
+			Descriptive word describing the editor version.
+	}
+	;
+
 Relation tredit
-	Fields ( sta ntracein ntraceout acceptancerate nkilled procedure )
+	Fields ( sta ntracein ntraceout acceptancerate nkilled procedure version )
 	Primary ( sta ntracein ntraceout acceptancerate nkilled procedure )
 	Foreign ( sta )
 	Description ( "This table saves trace editing summary" )
 	Detail {
 		This table can be used for statistical analysis
-		of trace editing process. Version number: 2.
+		of trace editing process. Table version ID: 2.
 	}
 	;
