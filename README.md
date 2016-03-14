@@ -6,15 +6,21 @@ Developer: Xiaotao Yang (add auto editing methods), Gary Pavlis (prototype of ma
 
 Contact: xtyang@indiana.edu (Xiaotao Yang)
 
-Reference for the method: X. Yang, G. Pavlis, Y. Wang (2016). A Quality Control Method for Teleseismic P-Wave Receiver Functions, Bulletin of the Seismological Society of America
+Reference for the method: X. Yang, G. Pavlis, Y. Wang (in revision). A Quality Control Method for Teleseismic P-Wave Receiver Functions, Bulletin of the Seismological Society of America
 
-Current version: 3.6.1, updated on 12/04/2015
+1. Current version: 3.6.1.
 
-Release notes: see ReleaseNotes.txt in the version folder (e.g., RFeditor3.6.1) for details on release notes for each version.
+2. Source tree:
 
-Dependency and instructions: see install.txt in the version folder (e.g., RFeditor3.6.1) for details on library dependency.
+libtreditoperator
+		This directory contains the lib needed by RFeditor editing procedures. However, the library files are currently embeded in RFeditor core codes. Thus compiling RFeditor does not require the compling of this library. This library can be used by other utilities or extensional programs.
 
-User Manual: detailed user manual is to be added later.
+RFeditor_corecode
+		This folder contains all of the RFeditor source code.
+		
+Utilities
+		This folder includes the utilities related to the use of RFeditor.
 
+3. Dependency: See install.txt in the RFeditor_corecode directory (e.g., RFeditor3.6.1) for details on library dependency.
 
-Version 3.7.0: is ready to use now.
+4. User Manual: detailed user manual is to be added later.
