@@ -128,7 +128,7 @@ void author()
 void usage_message()
 {
     version();
-    cerr << "RFeditor dbin dbout [-d outdir][-tredit filename][-rm][-go] "<<endl
+    cerr << "RFeditor dbin dbout [-d outdir][-tredit filename][-rm][-go][-continue]"<<endl
     	 << "[-fa fa_filename][-pf pffile][-laststa xx][-ss subset_condition][-v|V][-h|H]"<<endl;
     cerr << "** Use -h to print out detailed explanations on the options."<<endl;
     author();
