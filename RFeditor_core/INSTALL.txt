@@ -1,0 +1,51 @@
+In this file, we use symbol ‘$’ to denote terminal input.
+****************************************
+<<Operation Systems>>
+This program is fully tested under Mac OSX MontainLion (10.8), Mavericks (10.9), and Yosemite (10.10). 
+
+For other linux-based systems, it should be working but please report any issues at: https://github.com/xtyangpsp/RFeditor.
+
+****************************************
+<<LIBRARY DEPENDENCY>>
+
+This program operates on an Antelope Datascope database (version 5.5 and later). Please make sure that Antelope is working properly before installing this program.
+
+Update contrib:
+Under your $ANTELOPE/contrib, type in terminal: git pull. This will update your contrib package. After it finishes, recompile the updated programs.
+
+The following libraries are required in order to compile RFeditor (current version 3.0):
+1. libseisw: 
+Seismic widget library for plotting seismic traces as wiggles. It is part of the Antelope contrib package. 
+
+2. boost (http://www.boost.org):
+This is a C++ library. On Mac OSX, you can install it from fink.
+$ fink list boost
+$ fink install boostpackagename
+
+3. xmotif: xwindow functions;
+Mac OSX: on Mac OSX, you can install motif from fink.
+In terminal, type: $ fink list motif
+Then, type: $ fink install motifpackagename
+
+Or, you can compile the source code by yourself. This package/source code could be downloaded from: http://motif.ics.com and the link there.
+
+4. libseispp:
+This library is released along with the Antelope contrib package. Once you successfully compiled contrib software, libseispp should be already available.
+
+
+After successfully installed boost and xmotif libraries, run in terminal: 
+$ localmake_config
+This leads you to the interface where you can enable BOOST and XMOTIF capabilities.
+
+****************************************
+<<INSTALL>>
+In terminal, type: 
+$ make
+
+If the above compiling procedure is successful, run:
+$ make install
+This deposit tredit and decon tables to $ANTELOPE/contrib/data/css3.0.ext/, deposit RFeditor executable to $ANTELOPE/contrib/bin, and deposity RFeditor.pf to $ANTELOPE/contrib/data/pf/.
+
+**Make sure you have the permission to write, read, and execute programs.
+
+If you the above compiling went through, congratulations, RFeditor is available to you.

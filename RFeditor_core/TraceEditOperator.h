@@ -10,9 +10,6 @@
 #include "dbpp.h"
 #include "Metadata.h"
 #include "TimeWindow.h"
-#include <gsl/gsl_errno.h>
-#include <gsl/gsl_fft_real.h>
-#include <gsl/gsl_histogram.h>
 using namespace std;
 using namespace SEISPP;
 const string xcorcoekey("xcorcoe"); //x-correlation coefficience key.
@@ -21,6 +18,14 @@ const string killmethodkey("kill_by_method");
 const string killed_trace_key("is_killed_trace");
 const string FA_time_key("RF_FirstArrivalTime");
 const string FA_amplitude_key("RF_FirstArrivalAmplitude");
+const string magnitude_key("magnitude"),magtype_key("magtype");
+const string seaz_key("assoc.seaz");
+/*
+#include <gsl/gsl_errno.h>
+#include <gsl/gsl_fft_real.h>
+#include <gsl/gsl_histogram.h>
+*/
+
 /*
 RF Quality Index:
 /RF quality index is defined as: 
@@ -176,7 +181,11 @@ class TraceEditOperator
 		//show metadata for all traces with given attribute;
 		bool show_metadata(TimeSeriesEnsemble& tse, string mdtag,MDtype mdt);
 		// extract and save metadata for given trace (with evid) to FILE handle fh.
-		void save_metadata(TimeSeries& ts, FILE * fh, bool use_decon);
+		// by default, the metadata version is 1 for this routine.
+		////void save_metadata(TimeSeries& ts, FILE * fh, bool use_decon);
+		// extract and save metadata for given trace (with evid) to FILE handle fh.
+		// mdversion: metadata version, currently supports 1, 2. default is 1
+		void save_metadata(TimeSeries& ts, FILE * fh, bool use_decon, int mdversion=1);
 		//those two routines find the common time window of all of the members.
 		//This is useful when the members don't share the same length.
 		TimeWindow find_common_timewindow(TimeSeriesEnsemble& tse);
@@ -205,6 +214,8 @@ class TraceEditOperator
 		vector<int> sort_by_less_xcorcoef(TimeSeriesEnsemble& tse, int ref_evid);
 		vector<int> sort_by_less_xcorcoef(TimeSeriesEnsemble& tse, 
 					TimeSeries& ref_trace);
+		//Sort by event magnitude extracted from trace metadata
+		vector<int> sort_by_ascend_magnitude(TimeSeriesEnsemble& tse);
 		//do robust stacking and sort the ensemble members.
 		//it reads in the stacktype. It is able to, potentially, handle different stack type.
 		// at the time of it was wrote, only the RobustSNR stacking works.
@@ -219,9 +230,9 @@ class TraceEditOperator
 					TimeSeriesEnsemble& tse,string decon_par);
 		//sort by RF quality index;
 		vector<int> sort_by_RF_quality_index(TimeSeriesEnsemble& tse,
-					double a1, double a2, double a3, bool normalize);
+					double a1, double a2, double a3, bool normalize=true);
 		//remove duplicates by evidkey.
-		int remove_duplicates(TimeSeriesEnsemble& d, bool verbose);
+		int remove_duplicates(TimeSeriesEnsemble& d, bool verbose=false);
 		//this is useful when the user just wants to deal with the good traces.
 		//this reduces the data size.
 		TimeSeriesEnsemble exclude_false_traces(TimeSeriesEnsemble& d);
@@ -351,7 +362,7 @@ class TraceEditOperator
 					TimeWindow xcor_twin,double xcorcoe_min);
 		set<long> kill_low_RFQualityIndex_traces(TimeSeriesEnsemble& tse,
 					double a1, double a2, double a3, 
-					double qi_min,bool normalize);
+					double qi_min,bool normalize=true);
 		//set all traces back to live.
 		//Currently, for some unknown reason, this causes segment faults in TraceEditPlot.
 		// haven't tried it in other places.

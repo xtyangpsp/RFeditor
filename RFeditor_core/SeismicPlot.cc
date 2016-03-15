@@ -460,18 +460,31 @@ void print_help_callback(Widget w, XtPointer client_data, XtPointer call_data)
 void TraceEditPlot::help()
 {
 	//this->print_prefix();
-	cerr<<endl<<"> Help:"<<endl
-	<<"Use mouse botton 2 to edit traces or to the pick reference trace."<<endl<<endl
-	<<"EDITING METHODS"<<endl
-	<<"  ST:"<<endl<<"	Manual editing by single trace."<<endl
-	<<"  CO:"<<endl<<"	Manual editing by cutoff traces below the picking trace."<<endl<<endl
-	<<"SORTING METHODS"<<endl
-	<<"  By Reference Trace:"<<endl
+	cerr<<endl
+	<<">>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Tips <<<<<<<<<<<<<<<<<<<<<<<<<"<<endl
+	<<"**NOTE: this help message may be out-of-date. **"<<endl
+	<<"1. Use mouse botton 2 (middle button) to edit traces or to pick reference trace."<<endl
+	<<"2. File"<<endl
+	<<"3. Edit"<<endl
+	<<"  (a) Manual editing modes"<<endl
+	<<"    I:"<<endl<<"	Manual editing by single trace."<<endl
+	<<"    O:"<<endl<<"	Manual editing by cutoff traces below the picking trace."<<endl
+	<<"  (b) Trace-Based Procedures"<<endl
+	<<"    A: Apply all Trace-Based Procedures excluding LFC procedure."<<endl
+	<<"  (c) Decon-Based Procedures"<<endl
+	<<"    D: Apply all cutoffs on all Decon-Attributes excluding DSI cutoff, which is listed seperately."<<endl
+	<<"  (d) DSI Cutoff"<<endl
+	<<"  (e) Other Procedures"<<endl
+	<<"4. View"<<endl
+	<<"5. Sort"<<endl
+	<<"  (a) R: By Reference Trace"<<endl
 	<<"      Go to 'Sort->Sort By Reference Trace'."<<endl
-	<<"      'Pick Reference Trace' before first <Apply SBRT>."<<endl
-	<<"  By Stack Weight:"<<endl
+	<<"        P: 'Pick Reference Trace' before first <Apply SBRT>."<<endl
+	<<"      K: Use Robust stack trace as reference trace."<<endl
+	<<"  (b) W: By Stack Weight:"<<endl
 	<<"      Go to 'Sort->Sort By Stack Weight'."<<endl
-	<<"      You can customize the robust time window (optional) before <Apply SBSW>."<<endl;
+	<<"      You can customize the robust time window (optional) before <Apply SBSW>."<<endl
+	<<"6. Tools"<<endl;
 	this->print_prefix();
 }
 
@@ -2312,18 +2325,22 @@ void select_trace(Widget w, XtPointer client_data, XtPointer userdata)
 				FILE * fh;
 				stringstream ss;
 				string sta=sensemble->get_string("sta");
-				ss<<sta<<"_"<<evid<<".dat"<<'\0';
+				string chantemp=sensemble->get_string("chan");
+				ss<<sta<<"_"<<evid<<"_"<<chantemp<<".dat"<<'\0';
 				string fname=ss.str();
 				fh=fopen(fname.c_str(),"w");
 				TimeSeries ts=sensemble->member[tmp];
-				plot_handle->teo_global.save_metadata(ts,fh,plot_handle->use_decon_in_editing);
+				int metadata_version(2);
+				plot_handle->teo_global.save_metadata(ts,fh,plot_handle->use_decon_in_editing,
+						metadata_version);
 				vector<double>::iterator iptr;
 				for(iptr=ts.s.begin();iptr!=ts.s.end();++iptr)
         		{
 					fprintf(fh,"%12.5f\n",*iptr);
 				}
 				fclose(fh);
-				cerr<<"Picked trace has been saved as text file to: "<<fname<<endl;
+				cerr<<"Picked trace has been saved as text file to: "<<fname<<endl
+					<<"Metadata Version/Specifier: "<<metadata_version<<endl<<endl;
 				//ask for picking another trace
 				cerr<<"> ";
 				cerr<<"Save another trace to file? (y/n) ";
@@ -2414,6 +2431,55 @@ void TraceEditPlot::add_select_trace_callback()
 //*********************************************************************************
 
 //Start of sorting procedures.
+void sort_by_magnitude_callback(Widget w, XtPointer client_data, XtPointer userdata)
+{
+	TraceEditPlot *plot_handle=reinterpret_cast<TraceEditPlot *>(client_data);
+	if(plot_handle->use_netmag_table) plot_handle->sort_by_magnitude();
+	else
+	{
+		cerr<<"ERROR: netmag table is not used. magnitude information is not available!"<<endl;
+	}
+}
+void TraceEditPlot::sort_by_magnitude()
+{
+	//cout<<"This is a call test!"<<endl;
+	this->backup_undo_tse();
+	undo_for_kill=false;
+	TimeSeriesEnsemble * sensemble;
+	TimeSeriesEnsemble *comp_tmp;
+	//stringstream ss;
+	int i,kmax;
+	if(ThreeComponentMode)
+		kmax=3;
+	else
+		kmax=1;
+	try 
+	{
+		XtAppLock(AppContext);
+		for(i=0;i<kmax;++i)
+		{
+			if(seisw[i]!=NULL)
+			{
+				XtVaGetValues(seisw[i],ExmNseiswEnsemble,&sensemble,NULL);
+				if(trace_order.size()>0) trace_order.clear();
+
+				trace_order=teo_global.sort_by_ascend_magnitude(*sensemble);
+
+				if(trace_order.size()>0)
+				{
+					sort_method=sensemble->get_string(sort_method_key);
+					comp_tmp=new TimeSeriesEnsemble(*sensemble);
+					XtVaSetValues(seisw[i],ExmNseiswEnsemble, 
+						(XtPointer) (comp_tmp),ExmNseiswMetadata,
+						(XtPointer)(dynamic_cast<Metadata*>(this)), NULL);
+				}
+			}
+		}
+		XtAppUnlock(AppContext);
+	}catch(SeisppError& serr) 
+	{cerr<<"**Error in sorting by magnitude!"<<endl;
+	serr.what();};
+}
 void customize_xcor_window_callback(Widget w, XtPointer client_data, XtPointer userdata)
 {
 	TraceEditPlot *plot_handle=reinterpret_cast<TraceEditPlot *>(client_data);
@@ -3157,8 +3223,11 @@ void TraceEditPlot::show_trace_metadata()
 							<<"  6    decon.nspike"<<endl
 							<<"  7    decon.epsilon"<<endl
 							<<"  8    decon.peakamp"<<endl
-							<<"  9   decon.averamp"<<endl
-							<<"  10   decon.rawsnr"<<endl<<endl
+							<<"  9    decon.averamp"<<endl
+							<<"  10   decon.rawsnr"<<endl
+							<<"  11   magnitude"<<endl
+							//debug
+							<<"  12   seaz"<<endl<<endl
 							<<"> Your choice: ";
 						int itmp;
 						MDtype mdt;
@@ -3216,8 +3285,19 @@ void TraceEditPlot::show_trace_metadata()
 								mdt=MDreal;
 								btmp=teo_global.show_metadata(*sensemble,mdtag,mdt);
 								break;
+							case 11:
+								mdtag=magnitude_key;
+								mdt=MDreal;
+								btmp=teo_global.show_metadata(*sensemble,mdtag,mdt);
+								break;
+							//debug
+							case 12:
+								mdtag=seaz_key;
+								mdt=MDreal;
+								btmp=teo_global.show_metadata(*sensemble,mdtag,mdt);
+								break;
 							default:
-								cerr<<"Error in show_trace_metadata(0: wrong attribute code."<<endl;
+								cerr<<"Error in show_trace_metadata(): wrong attribute code."<<endl;
 								btmp=false;
 						}			
 					}
@@ -3668,7 +3748,7 @@ void TraceEditPlot::build_edit_menu()
         {NULL,NULL,(char)NULL,(char *)NULL,(char *)NULL,NULL,NULL,NULL,(MenuItem *)NULL}
     };
     MenuItem edit_submenu_auto[]={
-    	{(char *)"<Apply All Procedures (No LFC)>",
+    	{(char *)"<Apply All Procedures>",
         &xmPushButtonGadgetClass,'A',
         (char *)"<Key>A",(char *)"A",
         apply_all_autokill_callback,
@@ -3699,11 +3779,13 @@ void TraceEditPlot::build_edit_menu()
         (char *)NULL,(char *)NULL,
         NULL,
         this,NULL,kill_ClusteredArrivals_submenu},
+        /*
         {(char *)"*Kill Low-Frequency-Contaminated Traces*",
         &xmPushButtonGadgetClass,(char)NULL,
         (char *)NULL,(char *)NULL,
         NULL,
         this,NULL,kill_LFC_traces_submenu},
+        */
         {NULL,NULL,(char)NULL,(char *)NULL,(char *)NULL,NULL,NULL,NULL,(MenuItem *)NULL}
     };
     MenuItem edit_decon_niteration_submenu[]={
@@ -3787,7 +3869,7 @@ void TraceEditPlot::build_edit_menu()
     //submenu for autokill procedure: Decon Parameter Threshold
     //Decon parameter list: niteration nspike epsilon peakamp averamp rawsnr
     MenuItem edit_submenu_decon_threshold[]={
-    	{(char *)"<Apply DPC For All>",
+    	{(char *)"<Cutoffs On All Decon-Attributes>",
         &xmPushButtonGadgetClass,(char)'D',
         (char *)"<Key>D",(char *)"D",
         apply_kill_decon_par_for_all_callback,
@@ -3881,22 +3963,27 @@ void TraceEditPlot::build_edit_menu()
         undo_auto_edits_callback,
         this,NULL,(MenuItem *)NULL},
         //manual edit mode and its submenus
-        {(char *)"Manual-Editing Mode",
+        {(char *)"Manual-Editing Modes",
         &xmPushButtonGadgetClass,(char)NULL,
         (char *)NULL,(char *)NULL,
         NULL,
         this,NULL,edit_submenu_manual},
         //auto edit mode and its submenus
-        {(char *)"Auto-Editing Procedures",
+        {(char *)"Trace-Based Procedures",
         &xmPushButtonGadgetClass,(char)NULL,
         (char *)NULL,(char *)NULL,
         NULL,
         this,NULL,edit_submenu_auto},
-        {(char *)"Decon Parameter Cutoff",
+        {(char *)"Decon-Based Procedures",
         &xmPushButtonGadgetClass,(char)NULL,
         (char *)NULL,(char *)NULL,
         NULL,
         this,NULL,edit_submenu_decon_threshold},
+        {(char *)"  >> DSI Cutoff",
+        &xmPushButtonGadgetClass,(char)NULL,
+        (char *)NULL,(char *)NULL,
+        NULL,
+        this,NULL,edit_submenu_dsi},
         {(char *)"Stack Weight Cutoff",
         &xmPushButtonGadgetClass,(char)NULL,
         (char *)NULL,(char *)NULL,
@@ -3907,11 +3994,6 @@ void TraceEditPlot::build_edit_menu()
         (char *)NULL,(char *)NULL,
         NULL,
         this,NULL,edit_submenu_ref_correlation},
-        {(char *)"Decon-Success-Index Cutoff",
-        &xmPushButtonGadgetClass,(char)NULL,
-        (char *)NULL,(char *)NULL,
-        NULL,
-        this,NULL,edit_submenu_dsi},
         {(char *)"RF Quality Index Cutoff",
         &xmPushButtonGadgetClass,(char)NULL,
         (char *)NULL,(char *)NULL,
@@ -4127,6 +4209,11 @@ void TraceEditPlot::build_sort_menu()
         {NULL,NULL,(char)NULL,(char *)NULL,(char *)NULL,NULL,NULL,NULL,(MenuItem *)NULL}
 	};
 	MenuItem sort_menu[]={
+        {(char *)"By Event Magnitude",
+        &xmPushButtonGadgetClass,(char)NULL,
+        (char *)NULL,(char *)NULL,
+        sort_by_magnitude_callback,
+        this,NULL,(MenuItem *)NULL},
         {(char *)"By Correlation With Ref-Trace",
         &xmPushButtonGadgetClass,(char)NULL,
         (char *)NULL,(char *)NULL,
@@ -4165,9 +4252,83 @@ void TraceEditPlot::build_sort_menu()
             false,sort_menu);  
     XtManageChild(menu_bar);
 }
-void TraceEditPlot::build_filter_menu()
+// void TraceEditPlot::build_filter_menu()
+// {
+// 	MenuItem filter_gaussian_submenu[]={
+// 		{(char *)"<Apply>",
+//         &xmPushButtonGadgetClass,(char)NULL,
+//         (char *)NULL,(char *)NULL,
+//         NULL,
+//         this,NULL,(MenuItem *)NULL},
+//         {(char *)"Set Filter Specs",
+//         &xmPushButtonGadgetClass,(char)NULL,
+//         (char *)NULL,(char *)NULL,
+//         NULL,
+//         this,NULL,(MenuItem *)NULL},
+// 		{NULL,NULL,(char)NULL,(char *)NULL,(char *)NULL,NULL,NULL,NULL,(MenuItem *)NULL}
+// 	};
+// 	MenuItem filter_ricker_submenu[]={
+// 		{(char *)"<Apply>",
+//         &xmPushButtonGadgetClass,(char)NULL,
+//         (char *)NULL,(char *)NULL,
+//         NULL,
+//         this,NULL,(MenuItem *)NULL},
+//         {(char *)"Set Filter Specs",
+//         &xmPushButtonGadgetClass,(char)NULL,
+//         (char *)NULL,(char *)NULL,
+//         NULL,
+//         this,NULL,(MenuItem *)NULL},
+// 		{NULL,NULL,(char)NULL,(char *)NULL,(char *)NULL,NULL,NULL,NULL,(MenuItem *)NULL}
+// 	};
+// 	MenuItem filter_customize_submenu[]={
+// 		{(char *)"<Apply Customized Filter>",
+//         &xmPushButtonGadgetClass,(char)NULL,
+//         (char *)NULL,(char *)NULL,
+//         NULL,
+//         this,NULL,(MenuItem *)NULL},
+//         {(char *)"Set Filter Specs",
+//         &xmPushButtonGadgetClass,(char)NULL,
+//         (char *)NULL,(char *)NULL,
+//         NULL,
+//         this,NULL,(MenuItem *)NULL},
+// 		{NULL,NULL,(char)NULL,(char *)NULL,(char *)NULL,NULL,NULL,NULL,(MenuItem *)NULL}
+// 	};
+// 	MenuItem filter_menu[]={
+// 		{(char *)"0.02 ~ 1.0 Hz 2-Pole BP BW",
+//         &xmPushButtonGadgetClass,(char)NULL,
+//         (char *)NULL,(char *)NULL,
+//         NULL,
+//         this,NULL,(MenuItem *)NULL},
+//         {(char *)"0.02 ~ 5.0 Hz 2-Pole BP BW",
+//         &xmPushButtonGadgetClass,(char)NULL,
+//         (char *)NULL,(char *)NULL,
+//         NULL,
+//         this,NULL,(MenuItem *)NULL},
+//         {(char *)"Gaussian Wavelet",
+//         &xmPushButtonGadgetClass,(char)NULL,
+//         (char *)NULL,(char *)NULL,
+//         NULL,
+//         this,NULL,filter_gaussian_submenu},
+//         {(char *)"Ricker Wavelet",
+//         &xmPushButtonGadgetClass,(char)NULL,
+//         (char *)NULL,(char *)NULL,
+//         NULL,
+//         this,NULL,filter_ricker_submenu},
+//         {(char *)"<Customize Filter>",
+//         &xmPushButtonGadgetClass,(char)NULL,
+//         (char *)NULL,(char *)NULL,
+//         NULL,
+//         this,NULL,filter_customize_submenu},
+// 		{NULL,NULL,(char)NULL,(char *)NULL,(char *)NULL,NULL,NULL,NULL,(MenuItem *)NULL}
+// 	};
+// 	menu_filter=BuildMenu(menu_bar,XmMENU_PULLDOWN,
+//             (char *)"Filter",'l',
+//             false,filter_menu);  
+//     XtManageChild(menu_bar);
+// }
+void TraceEditPlot::build_tools_menu()
 {
-	MenuItem filter_gaussian_submenu[]={
+		MenuItem tools_filter_gaussian_submenu[]={
 		{(char *)"<Apply>",
         &xmPushButtonGadgetClass,(char)NULL,
         (char *)NULL,(char *)NULL,
@@ -4180,7 +4341,7 @@ void TraceEditPlot::build_filter_menu()
         this,NULL,(MenuItem *)NULL},
 		{NULL,NULL,(char)NULL,(char *)NULL,(char *)NULL,NULL,NULL,NULL,(MenuItem *)NULL}
 	};
-	MenuItem filter_ricker_submenu[]={
+	MenuItem tools_filter_ricker_submenu[]={
 		{(char *)"<Apply>",
         &xmPushButtonGadgetClass,(char)NULL,
         (char *)NULL,(char *)NULL,
@@ -4193,7 +4354,7 @@ void TraceEditPlot::build_filter_menu()
         this,NULL,(MenuItem *)NULL},
 		{NULL,NULL,(char)NULL,(char *)NULL,(char *)NULL,NULL,NULL,NULL,(MenuItem *)NULL}
 	};
-	MenuItem filter_customize_submenu[]={
+	MenuItem tools_filter_customize_submenu[]={
 		{(char *)"<Apply Customized Filter>",
         &xmPushButtonGadgetClass,(char)NULL,
         (char *)NULL,(char *)NULL,
@@ -4206,7 +4367,7 @@ void TraceEditPlot::build_filter_menu()
         this,NULL,(MenuItem *)NULL},
 		{NULL,NULL,(char)NULL,(char *)NULL,(char *)NULL,NULL,NULL,NULL,(MenuItem *)NULL}
 	};
-	MenuItem filter_menu[]={
+	MenuItem tools_filter_submenu[]={
 		{(char *)"0.02 ~ 1.0 Hz 2-Pole BP BW",
         &xmPushButtonGadgetClass,(char)NULL,
         (char *)NULL,(char *)NULL,
@@ -4221,22 +4382,69 @@ void TraceEditPlot::build_filter_menu()
         &xmPushButtonGadgetClass,(char)NULL,
         (char *)NULL,(char *)NULL,
         NULL,
-        this,NULL,filter_gaussian_submenu},
+        this,NULL,tools_filter_gaussian_submenu},
         {(char *)"Ricker Wavelet",
         &xmPushButtonGadgetClass,(char)NULL,
         (char *)NULL,(char *)NULL,
         NULL,
-        this,NULL,filter_ricker_submenu},
+        this,NULL,tools_filter_ricker_submenu},
         {(char *)"<Customize Filter>",
         &xmPushButtonGadgetClass,(char)NULL,
         (char *)NULL,(char *)NULL,
         NULL,
-        this,NULL,filter_customize_submenu},
+        this,NULL,tools_filter_customize_submenu},
 		{NULL,NULL,(char)NULL,(char *)NULL,(char *)NULL,NULL,NULL,NULL,(MenuItem *)NULL}
 	};
-	menu_filter=BuildMenu(menu_bar,XmMENU_PULLDOWN,
-            (char *)"Filter",'l',
-            false,filter_menu);  
+	MenuItem tools_compute_decon_submenu[]={
+		{(char *)"nspike",
+        &xmPushButtonGadgetClass,(char)NULL,
+        (char *)NULL,(char *)NULL,
+        NULL,
+        this,NULL,(MenuItem *)NULL},
+        {(char *)"peakamp",
+        &xmPushButtonGadgetClass,(char)NULL,
+        (char *)NULL,(char *)NULL,
+        NULL,
+        this,NULL,(MenuItem *)NULL},
+        {(char *)"averamp",
+        &xmPushButtonGadgetClass,(char)NULL,
+        (char *)NULL,(char *)NULL,
+        NULL,
+        this,NULL,(MenuItem *)NULL},
+        {(char *)"rfsnr",
+        &xmPushButtonGadgetClass,(char)NULL,
+        (char *)NULL,(char *)NULL,
+        NULL,
+        this,NULL,(MenuItem *)NULL},
+        {(char *)"<Set Data Window>",
+        &xmPushButtonGadgetClass,(char)NULL,
+        (char *)NULL,(char *)NULL,
+        NULL,
+        this,NULL,(MenuItem *)NULL},
+        {NULL,NULL,(char)NULL,(char *)NULL,(char *)NULL,NULL,NULL,NULL,(MenuItem *)NULL}
+	};
+	MenuItem tools_menu[]={
+        //call report_statistics()
+        {(char *)"Statistics",
+        &xmPushButtonGadgetClass,(char)NULL,
+        (char *)NULL,(char *)NULL,
+        report_statistics_callback,
+        this,NULL,(MenuItem *)NULL},
+        {(char *)"Compute Decon-Attributes",
+        &xmPushButtonGadgetClass,(char)NULL,
+        (char *)NULL,(char *)NULL,
+        NULL,
+        this,NULL,tools_compute_decon_submenu},
+        {(char *)"Apply Filter",
+        &xmPushButtonGadgetClass,(char)NULL,
+        (char *)NULL,(char *)NULL,
+        NULL,
+        this,NULL,tools_filter_submenu},
+        {NULL,NULL,(char)NULL,(char *)NULL,(char *)NULL,NULL,NULL,NULL,(MenuItem *)NULL}
+    };
+    menu_tools=BuildMenu(menu_bar,XmMENU_PULLDOWN,
+            (char *)"Tools",'T',
+            false,tools_menu);  
     XtManageChild(menu_bar);
 }
 void TraceEditPlot::build_help_menu()
@@ -4246,12 +4454,6 @@ void TraceEditPlot::build_help_menu()
         &xmPushButtonGadgetClass,(char)NULL,
         (char *)NULL,(char *)NULL,
         print_help_callback,
-        this,NULL,(MenuItem *)NULL},
-        //call report_statistics()
-        {(char *)"Statistics",
-        &xmPushButtonGadgetClass,(char)NULL,
-        (char *)NULL,(char *)NULL,
-        report_statistics_callback,
         this,NULL,(MenuItem *)NULL},
         {NULL,NULL,(char)NULL,(char *)NULL,(char *)NULL,NULL,NULL,NULL,(MenuItem *)NULL}
     };
@@ -4298,6 +4500,9 @@ void TraceEditPlot::set_defaults()
 	CodaCA_tolerance_twin_length=1e5;
 	PCoda_grow_tolerance=0.0;
     robust_twin=TimeWindow(0.0,120.0);
+    use_decon_in_editing=false;
+    use_netmag_table=false;
+    ref_trace_xcor_twin_set=false;
     //default decon thresholds.
     nspike_min=5;
 	nspike_max=1000;
@@ -4394,13 +4599,35 @@ void TraceEditPlot::set_defaults(Metadata& md)
     		" must be shorter than 'CodaCA_search_window' length."<<endl;
     	exit(-1);
     }
-    LowFrequency_min=md.get_double("LowFrequency_min");
-    LowFrequency_max=md.get_double("LowFrequency_max");
+    if(md.is_attribute_set((char *)("RefXcor_search_TW_start")) 
+    		&& md.is_attribute_set((char *)("RefXcor_search_TW_end")))
+    {
+		ref_trace_xcor_twin=TimeWindow(md.get_double("RefXcor_search_TW_start")+FA_reference_time,
+											md.get_double("RefXcor_search_TW_end")+FA_reference_time);
+		ref_trace_xcor_twin_set=true;
+    }
+    else
+    {
+    	cerr<<"Warning: failed in reading RefXcor_search_TW_start or RefXcor_search_TW_end. Use whole data window."<<endl;
+    	ref_trace_xcor_twin_set=false;
+    }
+//     try{
+//     ref_trace_xcor_twin=TimeWindow(md.get_double("RefXcor_search_TW_start")+FA_reference_time,
+// 										md.get_double("RefXcor_search_TW_end")+FA_reference_time);
+// 	ref_trace_xcor_twin_set=true;
+//     }catch(SeisppError& serr){
+//     serr.what();
+//     cerr<<"Warning: failed in reading RefXcor_search_TW_start or RefXcor_search_TW_end. Use whole data window."<<endl;
+//     ref_trace_xcor_twin_set=false;
+//     }
+    //LowFrequency_min=md.get_double("LowFrequency_min");
+    //LowFrequency_max=md.get_double("LowFrequency_max");
     
     robust_twin=TimeWindow(md.get_double("robust_window_start")+FA_reference_time,
         					md.get_double("robust_window_end")+FA_reference_time);
     //default decon thresholds.
     use_decon_in_editing=md.get_bool("use_decon_in_editing");
+    use_netmag_table=md.get_bool("use_netmag_table");
     nspike_min=md.get_int("nspike_min"); //10
 	nspike_max=md.get_int("nspike_max"); //400
 	niteration_min=md.get_int("niteration_min"); //10
@@ -4456,6 +4683,7 @@ TraceEditPlot::TraceEditPlot() : SeismicPlot(),teo_global()
     this->build_view_menu();
     this->build_sort_menu();
     //this->build_filter_menu();
+    this->build_tools_menu();
     this->build_help_menu();
 }
 TraceEditPlot::TraceEditPlot(Metadata& md) : SeismicPlot(md),teo_global(md)
@@ -4494,5 +4722,6 @@ TraceEditPlot::TraceEditPlot(Metadata& md) : SeismicPlot(md),teo_global(md)
     this->build_view_menu();
     this->build_sort_menu();
     //this->build_filter_menu();
+    this->build_tools_menu();
     this->build_help_menu();
 }

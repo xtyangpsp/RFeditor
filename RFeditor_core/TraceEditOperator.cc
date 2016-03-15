@@ -594,8 +594,17 @@ bool TraceEditOperator::show_metadata(TimeSeriesEnsemble& tse, long evid, bool u
 			<<"Station       : "<<ts_tmp.get_string("sta")<<endl
 			<<"Start time    : "<<strtime(ts_tmp.get_double("time"))<<endl
 			<<"Trace number  : "<<trn+1<<endl
-			<<"evid          : "<<ts_tmp.get_int(evidkey)<<endl
-			<<"Stack weight  : "<<stw<<endl
+			<<"evid          : "<<ts_tmp.get_int(evidkey)<<endl;
+		
+		if(ts_tmp.is_attribute_set(magnitude_key))
+		{cerr<<"magnitude     : "<<ts_tmp.get_double(magnitude_key)<<endl;}
+		if(ts_tmp.is_attribute_set(magtype_key))
+		{cerr<<"magtype       : "<<ts_tmp.get_string(magtype_key)<<endl;}
+		
+		//debug
+		if(ts_tmp.is_attribute_set(seaz_key))
+		{cerr<<"SEAZ:         : "<<ts_tmp.get_double(seaz_key)<<endl;}
+		cerr<<"Stack weight  : "<<stw<<endl
 			<<"RT XcorCoe    : "<<rtxc<<endl;
 		if(ts_tmp.is_attribute_set(killed_trace_key))
 			if(ts_tmp.get_bool(killed_trace_key))
@@ -630,7 +639,84 @@ bool TraceEditOperator::show_metadata(TimeSeriesEnsemble& tse, long evid, bool u
 	return found_trace;
 }
 // extract and save metadata for given trace (with evid) to FILE handle fh.
-void TraceEditOperator::save_metadata(TimeSeries& ts, FILE * fh, bool use_decon)
+//mdversion is set to 1.
+// void TraceEditOperator::save_metadata(TimeSeries& ts, FILE * fh, bool use_decon)
+// {
+// 	try
+// 	{
+// 		int i,nhdrs(0),mdversion(1);
+// 		int niteration(-99),nspike(-99);
+// 		double stw(-9999.0), rtxc(-9999.0),epsilon(-9999.0),
+// 				peakamp(-9999.0),averamp(-9999.0),rawsnr(-9999.0),
+// 				rfqi(-9999.0),dsi(-9999.0);
+// 		if(ts.is_attribute_set(SEISPP::stack_weight_keyword))
+// 			stw=ts.get_double(SEISPP::stack_weight_keyword);
+// 		else
+// 			cerr<<"Warning: stack weight keyword not set! Save default."<<endl;
+// 		if(ts.is_attribute_set(xcorcoekey))
+// 			rtxc=ts.get_double(xcorcoekey);
+// 		else
+// 			cerr<<"Warning: ref trace xcorcoe keyword not set! Save default."<<endl;
+// 		if(use_decon)
+// 		{
+// 			if(ts.is_attribute_set(decon_success_index_key))
+// 				dsi=ts.get_double(decon_success_index_key);
+// 			else
+// 			{
+//             	dsi=compute_decon_success_index(ts);
+// 			}
+// 			try{
+// 				niteration=ts.get_int(decon_niteration_key);
+// 				nspike=ts.get_int(decon_nspike_key);
+// 				epsilon=ts.get_double(decon_epsilon_key);
+// 				peakamp=ts.get_double(decon_peakamp_key);
+// 				averamp=ts.get_double(decon_averamp_key);
+// 				rawsnr=ts.get_double(decon_rawsnr_key);
+// 			}catch(...){cerr<<"Warning: error in extracting decon parameters!"<<endl;};
+// 		}
+// 		/*
+// 		string killedmethod("-");
+// 		if(ts.is_attribute_set(killed_trace_key))
+// 			if(ts.get_bool(killed_trace_key))
+// 			{	
+// 				if(ts.is_attribute_set(killmethodkey))
+// 					killedmethod=ts.get_string(killmethodkey);
+// 			}
+// 		*/
+// 		if(ts.is_attribute_set(RF_quality_index_key))
+// 			rfqi=ts.get_double(RF_quality_index_key);
+// 		string sta=ts.get_string("sta");
+// 		string start_time=strtime(ts.get_double("time"));
+// 		int evid=ts.get_int(evidkey);
+// 		double t0=ts.t0;
+// 		double dt=ts.dt;
+// 		int nsamp=ts.get_int("nsamp");
+// 		
+// 		//save to fh.
+// 		fprintf(fh,"station            : %s\n",sta.c_str());
+// 		fprintf(fh,"start_time         : %s\n",start_time.c_str());
+// 		fprintf(fh,"evid               : %10d\n",evid);
+// 		fprintf(fh,"samples            : %10d\n",nsamp);
+// 		fprintf(fh,"dt                 : %10.6f\n",dt);
+// 		fprintf(fh,"t0                 : %10.6f\n",t0);
+// 		fprintf(fh,"stack_weight       : %7.4f\n",stw);
+// 		fprintf(fh,"RT_xcorcoe         : %7.4f\n",rtxc);
+// 		fprintf(fh,"RFQualityIndex     : %7.4f\n",rfqi);
+// 		fprintf(fh,"DeconSuccessIndex  : %7.4f\n",dsi);
+// 		fprintf(fh,"niteration         : %10d\n",niteration);
+// 		fprintf(fh,"nspike             : %10d\n",nspike);
+// 		fprintf(fh,"epsilon            : %10.5f\n",epsilon);
+// 		fprintf(fh,"peakamp            : %10.5f\n",peakamp);
+// 		fprintf(fh,"averamp            : %10.5f\n",averamp);
+// 		fprintf(fh,"rawsnr             : %10.5f\n",rawsnr);
+// 	}catch(SeisppError& serr)
+// 	{
+// 		serr.what();
+// 	}
+// }
+// extract and save metadata for given trace (with evid) to FILE handle fh.
+// mdversion: metadata version, currently supports 1, 2.
+void TraceEditOperator::save_metadata(TimeSeries& ts, FILE * fh, bool use_decon, int mdversion)
 {
 	try
 	{
@@ -638,7 +724,8 @@ void TraceEditOperator::save_metadata(TimeSeries& ts, FILE * fh, bool use_decon)
 		int niteration(-99),nspike(-99);
 		double stw(-9999.0), rtxc(-9999.0),epsilon(-9999.0),
 				peakamp(-9999.0),averamp(-9999.0),rawsnr(-9999.0),
-				rfqi(-9999.0),dsi(-9999.0);
+				rfqi(-9999.0),dsi(-9999.0),magnitude(-9999.0);
+		string magtype("-");
 		if(ts.is_attribute_set(SEISPP::stack_weight_keyword))
 			stw=ts.get_double(SEISPP::stack_weight_keyword);
 		else
@@ -682,23 +769,55 @@ void TraceEditOperator::save_metadata(TimeSeries& ts, FILE * fh, bool use_decon)
 		double dt=ts.dt;
 		int nsamp=ts.get_int("nsamp");
 		
+		if(ts.is_attribute_set(magnitude_key)) magnitude=ts.get_double(magnitude_key);
+		if(ts.is_attribute_set(magtype_key)) magtype=ts.get_string(magtype_key);
+		
 		//save to fh.
-		fprintf(fh,"station            : %s\n",sta.c_str());
-		fprintf(fh,"start_time         : %s\n",start_time.c_str());
-		fprintf(fh,"evid               : %10d\n",evid);
-		fprintf(fh,"samples            : %10d\n",nsamp);
-		fprintf(fh,"dt                 : %10.6f\n",dt);
-		fprintf(fh,"t0                 : %10.6f\n",t0);
-		fprintf(fh,"stack_weight       : %7.4f\n",stw);
-		fprintf(fh,"RT_xcorcoe         : %7.4f\n",rtxc);
-		fprintf(fh,"RFQualityIndex     : %7.4f\n",rfqi);
-		fprintf(fh,"DeconSuccessIndex  : %7.4f\n",dsi);
-		fprintf(fh,"niteration         : %10d\n",niteration);
-		fprintf(fh,"nspike             : %10d\n",nspike);
-		fprintf(fh,"epsilon            : %10.5f\n",epsilon);
-		fprintf(fh,"peakamp            : %10.5f\n",peakamp);
-		fprintf(fh,"averamp            : %10.5f\n",averamp);
-		fprintf(fh,"rawsnr             : %10.5f\n",rawsnr);
+		switch(mdversion)
+		{
+			case 1:
+				fprintf(fh,"%%Metadata version %d\n",mdversion);
+				fprintf(fh,"station            : %s\n",sta.c_str());
+				fprintf(fh,"start_time         : %s\n",start_time.c_str());
+				fprintf(fh,"evid               : %10d\n",evid);
+				fprintf(fh,"samples            : %10d\n",nsamp);
+				fprintf(fh,"dt                 : %10.6f\n",dt);
+				fprintf(fh,"t0                 : %10.6f\n",t0);
+				fprintf(fh,"stack_weight       : %7.4f\n",stw);
+				fprintf(fh,"RT_xcorcoe         : %7.4f\n",rtxc);
+				fprintf(fh,"RFQualityIndex     : %7.4f\n",rfqi);
+				fprintf(fh,"DeconSuccessIndex  : %7.4f\n",dsi);
+				fprintf(fh,"niteration         : %10d\n",niteration);
+				fprintf(fh,"nspike             : %10d\n",nspike);
+				fprintf(fh,"epsilon            : %10.5f\n",epsilon);
+				fprintf(fh,"peakamp            : %10.5f\n",peakamp);
+				fprintf(fh,"averamp            : %10.5f\n",averamp);
+				fprintf(fh,"rawsnr             : %10.5f\n",rawsnr);
+				break;
+			case 2:
+				fprintf(fh,"%%Metadata version %d\n",mdversion);
+				fprintf(fh,"station            : %s\n",sta.c_str());
+				fprintf(fh,"start_time         : %s\n",start_time.c_str());
+				fprintf(fh,"evid               : %10d\n",evid);
+				fprintf(fh,"magnitude          : %6.2f\n",magnitude);
+				fprintf(fh,"magtype            : %s\n",magtype.c_str());
+				fprintf(fh,"samples            : %10d\n",nsamp);
+				fprintf(fh,"dt                 : %10.6f\n",dt);
+				fprintf(fh,"t0                 : %10.6f\n",t0);
+				fprintf(fh,"stack_weight       : %7.4f\n",stw);
+				fprintf(fh,"RT_xcorcoe         : %7.4f\n",rtxc);
+				fprintf(fh,"RFQualityIndex     : %7.4f\n",rfqi);
+				fprintf(fh,"DeconSuccessIndex  : %7.4f\n",dsi);
+				fprintf(fh,"niteration         : %10d\n",niteration);
+				fprintf(fh,"nspike             : %10d\n",nspike);
+				fprintf(fh,"epsilon            : %10.5f\n",epsilon);
+				fprintf(fh,"peakamp            : %10.5f\n",peakamp);
+				fprintf(fh,"averamp            : %10.5f\n",averamp);
+				fprintf(fh,"rawsnr             : %10.5f\n",rawsnr);
+				break;
+			default:
+				cerr<<"ERROR in save_metadata(). Unrecoganized medata version speficier! Use 1 or 2."<<endl;
+		}
 	}catch(SeisppError& serr)
 	{
 		serr.what();
@@ -1051,6 +1170,8 @@ compute fft forward transform using gsl function: gsl_fft_real_transform()
 The core codes of this routine are modified from: 
 https://www.gnu.org/software/gsl/manual/gsl-ref_16.html
 */
+//*****Commented out for now ********
+/*
 vector<double> compute_fft_real_transform(vector<double> data)
 {
 	vector<double> result;
@@ -1070,37 +1191,36 @@ vector<double> compute_fft_real_transform(vector<double> data)
   	real = gsl_fft_real_wavetable_alloc (n);
 	
 	//DEBUG
-	/*
-	for (i = 0; i < n; i++)
-    {
-      printf ("%d: %e\n", i, d[i]);
-    }
-    printf ("\n");
-    */
+	
+	//for (i = 0; i < n; i++)
+    //{
+    //  printf ("%d: %e\n", i, d[i]);
+    //}
+    //printf ("\n");
   	gsl_fft_real_transform (d, 1, n,real, work);
   	gsl_fft_real_wavetable_free (real);
   	//DEBUG
-  	/*
-  	cout<<"After FFT: "<<endl;
-	for (i = 0; i < n; i++)
-    {
-      printf ("%d: %e\n", i, abs(d[i]));
-    }
-    printf ("\n");
-    */
   	
-	for(i=0;i<n;++i) result[i]=d[i];
+  	//cout<<"After FFT: "<<endl;
+	//for (i = 0; i < n; i++)
+    //{
+    //  printf ("%d: %e\n", i, abs(d[i]));
+    //}
+    //printf ("\n");
+    
+  	
+	//for(i=0;i<n;++i) result[i]=d[i];
 	
-	/*cout<<"After FFT: "<<endl;
-	for (i = 0; i < n; i++)
-    {
-      printf ("%d: %e\n", i, fabs(result[i]));
-    }
-    printf ("\n");
-    */
-	return result;
-}
-
+	//cout<<"After FFT: "<<endl;
+	//for (i = 0; i < n; i++)
+    //{
+    //  printf ("%d: %e\n", i, fabs(result[i]));
+    //}
+    //printf ("\n");
+    
+	//return result;
+//}
+*/
 
 //simply compute dot products of the of two TimeSeries traces.
 //it assumes that the data have same length. this is a zerolag version.
@@ -1460,6 +1580,34 @@ vector<int> TraceEditOperator::sort_by_less_xcorcoef(TimeSeriesEnsemble& tse,
             */
         }
         tse.put(sort_method_key,(char *)"xcorcoe_ref_trace");
+    	return result;
+    }catch(...){throw;};
+}
+//Sort by event magnitude extracted from trace metadata
+vector<int> TraceEditOperator::sort_by_ascend_magnitude(TimeSeriesEnsemble& tse)
+{
+	try
+	{	
+		const string base_message("sort_by_magnitude: ");
+		int i;
+		vector<int> result;
+		vector<TimeSeries>::iterator iptr;
+		//put sortkey.
+		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
+		{
+			iptr->put(ensemblesortkey,magnitude_key);
+		}
+        //sort
+        sort(tse.member.begin(),tse.member.end(),sort_less_double<TimeSeries>());
+        
+        result.reserve(tse.member.size());
+        for(i=0,iptr=tse.member.begin();iptr!=tse.member.end();++iptr,++i)
+        {
+            int im;
+            im=iptr->get_int(evidkey);
+            result.push_back(im);
+        }
+        tse.put(sort_method_key,(char *)"event_magnitude");
     	return result;
     }catch(...){throw;};
 }
@@ -2857,9 +3005,12 @@ set<long> TraceEditOperator::kill_ClusteredArrivals_traces(TimeSeriesEnsemble& t
 //of the max amplitude falls into the low-frequency window (lf_min, lf_max).
 //the lower bound is needed since some traces with ultra low frequency background
 //may not be bad traces. e.g., 100s singnal may have no effect on the receiver functions.
+//*****Commented out for now ********
+
 set<long> TraceEditOperator::kill_LowFrequencyContaminated_traces(TimeSeriesEnsemble& tse,
 			double lf_min,double lf_max)
 {
+	
 	try 
 	{
 		const string error_base("ERROR in 'kill_LowFrequencyContaminated_traces': ");
@@ -2867,6 +3018,13 @@ set<long> TraceEditOperator::kill_LowFrequencyContaminated_traces(TimeSeriesEnse
 		long evid;
 		int numkills(0),i;
 		set<long> evids_to_kill;
+		
+		cerr<<error_base<<"this procedure is blocked in the current version of RFeditor. Skipped!"<<endl;
+		
+		evids_to_kill.clear();
+		return(evids_to_kill);
+		
+		/*
 		//tolerance number of samples.
 		//tnsample=SEISPP::nint(tlength/tse.member[0].dt)+1;
 		//cerr<<"tnsample = "<<tnsample<<endl;
@@ -2891,21 +3049,21 @@ set<long> TraceEditOperator::kill_LowFrequencyContaminated_traces(TimeSeriesEnse
             	//cout<<"Before FFT: size="<<fft_tmp.size()<<endl;
             	fft_tmp=compute_fft_real_transform(iptr->s);
             	//cout<<"After FFT: returned size="<<fft_tmp.size()<<endl;
-            	/*
+            	
 				for (int i = 0; i < fft_tmp.size(); i++)
 				{
 				  printf ("%d: %e\n", i, fabs(fft_tmp[i]));
 				}
-				printf ("\n");*/
+				printf ("\n");
             	//get histogram of the spectrum data.
             	//nbin is estimated based on the given tolerance minimum frequency.
-            	/*
-            	int nbin=SEISPP::nint(fft_tmp.size()*df/fmin);
             	
-            	gsl_histogram * h = gsl_histogram_alloc (nbin);
-    			gsl_histogram_set_ranges_uniform (h, 0, fft_tmp.size()*df);
+            	//int nbin=SEISPP::nint(fft_tmp.size()*df/fmin);
+            	
+            	//gsl_histogram * h = gsl_histogram_alloc (nbin);
+    			//gsl_histogram_set_ranges_uniform (h, 0, fft_tmp.size()*df);
     			
-    			*/
+    			
             	for(int k=0;k<fft_tmp.size();++k)
             	//	gsl_histogram_increment (h, fft_tmp[k]);
             	{	if(fabs(fft_tmp[k])>fabs(vmax)) {vmax=fabs(fft_tmp[k]);vmax_loc=k;}}
@@ -2924,13 +3082,13 @@ set<long> TraceEditOperator::kill_LowFrequencyContaminated_traces(TimeSeriesEnse
 					iptr->put(killmethodkey,string(AUTOKILL_LowFrequencyContaminated));
 					evid=iptr->get_long(evidkey);
 					//debug
-					/*
-					if(evid==1164)
-					{
-						for(int k=0;k<fft_tmp.size();++k)
+					
+					//if(evid==1164)
+					//{
+					//	for(int k=0;k<fft_tmp.size();++k)
 						//	gsl_histogram_increment (h, fft_tmp[k]);
-						{	cout<<k*df<<"    "<<fabs(fft_tmp[k])<<endl;}
-					}*/
+					//	{	cout<<k*df<<"    "<<fabs(fft_tmp[k])<<endl;}
+					//}
 					evids_to_kill.insert(evid);
 					++numkills;
 					
@@ -2949,8 +3107,11 @@ set<long> TraceEditOperator::kill_LowFrequencyContaminated_traces(TimeSeriesEnse
     	tes.nkilled=evids_to_kill.size();
     	statistics.push_back(tes);
 		return(evids_to_kill);
+		*/
 	}catch(...){throw;};
+	
 }
+
 
 //a series of procedures killing by decon parameter thresholds.
 set<long> TraceEditOperator::kill_by_decon_ALL(TimeSeriesEnsemble& tse,

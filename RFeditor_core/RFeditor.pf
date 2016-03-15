@@ -2,8 +2,6 @@
 # skipped automatically with a log message
 minimum_number_receiver_functions 3
 
-ThreeComponentMode false
-
 # First arrival time shift for plot (default displays FA at time 0).
 #+, shift to positive time axis; -, shift left to negative time axis.
 #then use_arrival_data is set to false. this is the FA time in the data.
@@ -11,16 +9,13 @@ ThreeComponentMode false
 FA_reference_time 0.0
 use_arrival_data true	
 use_decon_in_editing true
+use_netmag_table true
 
 radial_channel_key	IR
 transverse_channel_key	IT
 vertical_channel_key IZ
 
 edit_on_channel radial
-
-set_continue_mode_by_default false  
-	#true: continue automatically on next station if the output table is not empty. 
-	#false: ask user to determine.
 
 #*** apply prefilter before stacking and displaying
 #prefilter is highly recommended for pure-spike RF data.
@@ -83,15 +78,14 @@ apply_kdepsilon false
 apply_kdpkamp false
 apply_kdavamp false
 apply_kdsnr false
+apply_kldsi true
 
 apply_knfa true
 apply_kgpc true
 apply_kca true
-apply_klfc false
 
-apply_klsw false
-apply_klxcor false
-apply_kldsi true
+apply_klsw true
+apply_klxcor true
 apply_klrfqi true
 	
 	#min_normalized_FA_amplitude 0.6   #normalized by the max amplitude of the trace.
@@ -102,19 +96,15 @@ apply_klrfqi true
 	PCoda_search_TW_end 35.0
 	CodaCA_search_TW_start 2.0
 	CodaCA_search_TW_end 20.0
-	RefXcor_search_TW_start -2
-	RefXcor_search_TW_end 20
+	RefXcor_search_TW_start -1
+	RefXcor_search_TW_end 10
 	max_trace_abs_amplitude 100    #true amplitude (as stored in the data).
 	CodaCA_tolerance_twin_length 5
 	PCoda_grow_tolerance 0.0
-	RFQI_weigth_stackweight 0.333
-	RFQI_weigth_refxcorcoe  0.333
-	RFQI_weigth_successindex  0.333
-	rfqi_min  0.5
-	
-	#needed by kill low frequency contaminated traces
-	LowFrequency_min 0.01
-	LowFrequency_max 0.1
+	RFQI_weigth_stackweight 0.2
+	RFQI_weigth_refxcorcoe  0.3
+	RFQI_weigth_successindex  0.5
+	rfqi_min  0.6
 	
 	niteration_min 20
 	niteration_max 1000
@@ -129,15 +119,15 @@ apply_klrfqi true
 	rawsnr_min 1
 	rawsnr_max 1000
 	
-	stackweight_min 0.3
-	xcorcoe_min  0.3
+	stackweight_min 0.2
+	xcorcoe_min  0.5
 	dsi_min 0.3
 	stacktype RobustSNR
-	robust_window_start -2
-	robust_window_end 15	
+	robust_window_start -1
+	robust_window_end 10	
 		
 	# decon attribute key definition.
-	# make sure they are consistent with those in trace_mdl_wfprocess{}.
+	# make sure they are consistent with those in trace_mdl_wfprocess_decon{}.
 	decon_nspike_key decon.nspike
 	decon_rawsnr_key decon.rawsnr
 	decon_averamp_key decon.averamp
@@ -149,8 +139,8 @@ apply_klrfqi true
 gui_edit_parameters &Arr{
 	#stacking window params for robustSNR stacking.
 	#stacktype RobustSNR
-	robust_window_start -2
-	robust_window_end 15
+	robust_window_start -1
+	robust_window_end 10
 	
 	#sensitivity in amplitude: turn on detection only if the amplitude is 
 	#>= this value. this is used in TraceEditOperator object.
@@ -193,6 +183,8 @@ gui_edit_parameters &Arr{
 	CodaCA_search_TW_start 2.0
 	CodaCA_search_TW_end 20.0
 	CodaCA_tolerance_twin_length 5   #recommend: 5*(filter width in time-domain).
+	RefXcor_search_TW_start -1
+        RefXcor_search_TW_end 10
 	#********* end of killing parameters.**********************
 
 	# decon attribute key definition.
@@ -351,6 +343,11 @@ trace_mdl_wfprocess_decon &Tbl{
     #needed when running with -firstarrival option.
     assoc.esaz real
     assoc.seaz real
+    
+    #needed when use_netmag_table is set to true
+    #!!!!!please comment out if the above attribute is set to false.
+    magtype string
+    magnitude real
 }
 trace_mdl_wfprocess &Tbl{
 	pwfid int

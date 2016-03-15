@@ -110,6 +110,7 @@ public:
     void customize_kill_low_ref_correlation();
     void apply_kill_low_RFQualityIndex();
     //sorting procedures.
+    void sort_by_magnitude();
     void sort_by_ref_trace();
     void sort_by_xcor_to_stacktrace();
     void customize_time_window_by_WINDOWTYPE();
@@ -140,6 +141,7 @@ public:
     //bool robust_window_set;
 	bool allow_edit;
 	bool use_decon_in_editing;
+	bool use_netmag_table;
 	bool killed_review_mode;
 	//
 	string decon_kill_parname;
@@ -156,6 +158,8 @@ public:
     StackType stacktype;
 	friend class SeismicPlot;
 	friend class TraceEditOperator;
+	
+	
 private:
     Metadata metadata; //used to save metadata used in ploting the stack trace.
     DisplayMarkerDataRec tracemarkers;
@@ -185,8 +189,9 @@ private:
     Widget menu_edit;
     Widget menu_view;
     Widget menu_sort;
-    Widget menu_filter;
+    //Widget menu_filter;
     Widget menu_help;
+    Widget menu_tools;
     /* These two private methods are used to allow common code for
        constructors. */
     void edit_enable();
@@ -194,8 +199,9 @@ private:
     void build_edit_menu();
     void build_view_menu();
     void build_sort_menu();
-    void build_filter_menu();
+    //void build_filter_menu();
     void build_help_menu();
+    void build_tools_menu();
     /* This is used by Seisw widget.  1 for single trace edit mode
        set 2 for cutoff mode 
        NOTE by Xiaotao Yang: other values mean to disable edit.
