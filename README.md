@@ -13,15 +13,15 @@ $ RFeditor
 
 2. Source tree:
 
-libtreditoperator
+(1) libtreditoperator
 		This directory contains the lib needed by RFeditor editing procedures. However, the library files are currently embeded in RFeditor core codes. Thus compiling RFeditor does not require the compling of this library. This library can be used by other utilities or extensional programs.
 
-RFeditor_core
+(2) RFeditor_core
 		This folder contains all of the RFeditor source code.
 		
-Utilities
+(3) Utilities
 		This folder includes the utilities related to the use of RFeditor.
 
-3. Dependency: See install.txt in the RFeditor_core directory (e.g., RFeditor3.6.1) for details on library dependency.
+3. Dependency: See INSTALL.txt in the RFeditor_core directory for details on library dependency.
 
 4. User Manual: detailed user manual is to be added later.
