@@ -126,15 +126,6 @@ auto_edit_parameters &Arr{
 	stacktype RobustSNR
 	robust_window_start -1
 	robust_window_end 10	
-		
-	# decon attribute key definition.
-	# make sure they are consistent with those in trace_mdl_wfprocess_decon{}.
-	decon_nspike_key decon.nspike
-	decon_rawsnr_key decon.rawsnr
-	decon_averamp_key decon.averamp
-	decon_epsilon_key decon.epsilon
-	decon_niteration_key decon.niteration
-	decon_peakamp_key decon.peakamp
 }
 ######## parameters for TraceEditPlot & TraceEditOperator procedures. GUI mode
 gui_edit_parameters &Arr{
@@ -168,16 +159,6 @@ gui_edit_parameters &Arr{
 	averamp_max 1
 	rawsnr_min 1
 	rawsnr_max 1000
-	#********* end of killing parameters.**********************
-
-	# decon attribute key definition.
-	# make sure they are consistent with those in trace_mdl_wfprocess{}.
-	decon_nspike_key decon.nspike
-	decon_rawsnr_key decon.rawsnr
-	decon_averamp_key decon.averamp
-	decon_epsilon_key decon.epsilon
-	decon_niteration_key decon.niteration
-	decon_peakamp_key decon.peakamp
 	
 	# ******** following are plotting parameters. change ONLY IF necessary. !!!
 	SUVariableArea_grey_value	1
