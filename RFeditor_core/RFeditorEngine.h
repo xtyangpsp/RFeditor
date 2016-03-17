@@ -33,9 +33,9 @@ class RFeditorEngine
         */
         RFeditorEngine(){};
         // this constructor is the actual usable constructor.
-        RFeditorEngine(Metadata& params, bool GUIoff);
+        RFeditorEngine(Metadata& params, bool GUIoff=false);
         //default destructor. may not be necessary.
-        //~RFeditorEngine(){delete Rwindow;delete teo;};
+        //~RFeditorEngine(){delete RFwindow;delete teo;};
         /* \brief Loads ensembles of RFs and enable interactive editing.  
 
            Load a pair of ensembles for radial and transverse for 
@@ -53,15 +53,12 @@ class RFeditorEngine
         //			set<long> *rkills,set<long> *tkills){return 0;}; 
         set<long> edit(TimeSeriesEnsemble& r);
         set<long> edit(TimeSeriesEnsemble& r,Metadata& auto_edit_params);
-        // string st for stacktype. Xiaotao Yang 01/08/2015
-        TimeWindow report_robust_twin(){return(robust_twin);};
-        void set_robust_twin(TimeWindow tw){robust_twin=tw;};
         //save statistical information to file: fname.
         void save_statistics(string fname);
         void save_statistics_summary(string fname, string rfe_version="-");
         void save_statistics_summary(DatascopeHandle& dbh, int treditversion=1, string rfe_version="-");
         void reset_statistics()
-        {if(!GUIoff) Rwindow->teo_global.reset_statistics();
+        {if(!GUIoff) RFwindow->teo_global.reset_statistics();
         	else this->teo->reset_statistics();};
         TraceEditOperator *teo;
     private:
@@ -73,8 +70,8 @@ class RFeditorEngine
         int nkilled_auto;
         int nkilled_manual;
         //TraceEditPlot Twindow;
-        TraceEditPlot *Rwindow;  // show R window later is better. Xiaotao Yang 1/22/2015
-        TimeWindow robust_twin;
+        TraceEditPlot *RFwindow;  // show R window later is better. Xiaotao Yang 1/22/2015
+        //TimeWindow robust_twin;
         /* private method kills T if R marked or R if T marked bad */
-        void kill_sibling(); 
+        //void kill_sibling(); 
 };

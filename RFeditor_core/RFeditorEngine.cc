@@ -9,8 +9,6 @@
 #include "RFeditorEngine.h"
 using namespace std;
 using namespace SEISPP;
-const string stackstaname("stack");
-const string evidkey("eventid"); 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++
 RFeditorEngine::RFeditorEngine(Metadata& params, bool guioff_mode) 
 //, Twindow(params)
@@ -18,21 +16,9 @@ RFeditorEngine::RFeditorEngine(Metadata& params, bool guioff_mode)
     GUIoff=guioff_mode;
     if(!GUIoff)
 	{
-		try {
-			Rwindow=new TraceEditPlot(params);
-			string edit_mode;
-			edit_mode=params.get_string("editing_mode");
-			if(edit_mode=="cutoff")
-			{
-				cutoff_editing=true;
-				Rwindow->turn_on_cutoff_mode();
-				//Twindow.turn_on_cutoff_mode();
-			}
-			else
-				cutoff_editing=false;
-			double rtwstart=params.get_double("robust_window_start");
-			double rtwend=params.get_double("robust_window_end");
-			robust_twin=TimeWindow(rtwstart,rtwend);
+		try 
+		{
+			RFwindow=new TraceEditPlot(params);
 		}catch(...)
 		{
 			cerr<<"RFeditorEngine: error in main constructor with graphics."<<endl;
@@ -43,6 +29,7 @@ RFeditorEngine::RFeditorEngine(Metadata& params, bool guioff_mode)
 	{
 		//cerr<<"This is a test for guioff."<<endl;
 		teo=new TraceEditOperator(params);
+		RFwindow=NULL;
 	}
 }
 void RFeditorEngine::save_statistics(string fname)
@@ -50,7 +37,7 @@ void RFeditorEngine::save_statistics(string fname)
 	TraceEditStatistics tes;
 	tes.print_header(fname);
 	if(!GUIoff)
-		Rwindow->teo_global.report_statistics(fname);
+		RFwindow->teo_global.report_statistics(fname);
 	else
 		teo->report_statistics(fname);
 }
@@ -61,7 +48,7 @@ void RFeditorEngine::save_statistics_summary(string fname, string rfe_version)
 	if(!this->GUIoff)
 	{	
 		//DEBUG
-		summary=Rwindow->teo_global.get_statistics_summary();
+		summary=RFwindow->teo_global.get_statistics_summary();
 	}
 	else
 	{	summary=this->teo->get_statistics_summary();
@@ -102,7 +89,7 @@ void RFeditorEngine::save_statistics_summary(DatascopeHandle& dbh,
 	dbtredit.lookup("tredit");
 	Metadata summary;
 	if(!GUIoff)
-		summary=Rwindow->teo_global.get_statistics_summary();
+		summary=RFwindow->teo_global.get_statistics_summary();
 	else
 		summary=teo->get_statistics_summary();
 	nkilled_auto=summary.get_int(TOTAL_NKILLED_AUTO);
@@ -326,7 +313,6 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& rd)
 			set<long> rkills0;
 			ntraces=rd.member.size();
 			cout << "Loaded ensemble size="<<ntraces<<endl;
-			//    <<"transverse ensemble size="<<td.member.size()<<endl;
 			/* This changes the plot titles for each window.  Assumes sta
 			   is defined in ensemble metadata */
 			station=rd.get_string("sta");
@@ -334,32 +320,14 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& rd)
 			//Twindow.put("title",title);
 			string title=string("< ")+rd.get_string("chan")+
                     string(" >")+string(" channel data for station ")+station;
-			Rwindow->put("title",title);
-			/* This displays the transverse but immediately exits the event loop */
-			//Twindow.plot(td,false);
-			//Twindow.refresh();
-			/* Plot the radial data in edit mode */
-			//debug
-			//cout<<"test 1"<<endl;
-			Rwindow->plot(rd,true);
-			//Twindow.ExitDisplay(); // kill the event thread or it will multiply
-			//cout<<"test 2"<<endl;
-			rkills0=Rwindow->kills;
-			Rwindow->kills.clear();
+			RFwindow->put("title",title);
+		
+			RFwindow->plot(rd,true);
+			
+			rkills0=RFwindow->kills;
+			RFwindow->kills.clear();
 			nkilled=rkills0.size();
 
-			/*
-			set<long> tkills0;
-			//Twindow.plot(td,true);
-			//tkills0=Twindow.kills;
-			if(tkills0.size()>0)
-			{
-				teo.apply_kills(rd,tkills0);
-				teo.apply_kills(td,tkills0);
-			}
-			*/
-			//*rkills=rkills0;
-        //*tkills=tkills0;
         	return(rkills0);
         }
         else
@@ -414,15 +382,15 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
 			}
 			
 			if(apply_klfc)
-				cerr << "** WARNING: procedure of killing Low-Frequency Contaminated traces" 
+				cerr << "** WARNING: procedure of killing Low-Frequency Contaminated traces" <<endl
 					 << "   are NOT recommended in this version! It is under development." <<endl;
 			
 			if((apply_kdnitn || apply_kdnspike || apply_kdepsilon || apply_kdpkamp ||
 				apply_kdavamp || apply_kdsnr || apply_kldsi) && !use_decon_in_editing)
 			{
-				cerr << "*** ERROR in RFeditorEngine (GUIoff mode): can't apply decon"
-					<< "parameter related procedures when use_decon_in_editing is set "
-					<< "to false!"<<endl;
+				cerr << "*** ERROR in RFeditorEngine (GUIoff mode): can't apply decon" <<endl
+					 << "parameter related procedures when use_decon_in_editing is set "<<endl
+					 << "to false!"<<endl;
 				exit(-1);
 			}
 						
@@ -921,9 +889,8 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
 					RFQI_weights[0]=RFQI_weights[0]/(RFQI_weights[0]+RFQI_weights[1]);
 					RFQI_weights[1]=RFQI_weights[1]/(RFQI_weights[0]+RFQI_weights[1]);
 					RFQI_weights[2]=0.0;
-					cout<<"** Warning: use_decon_in_editing is false. "<<
-						"decon_success_index weight is set to 0.0. Other "
-						<<"weights are scaled to have sum of 1.0."<<endl;
+					cout<<"** Warning: use_decon_in_editing is false. decon_success_index "<<endl
+						<<"   weight is set to 0.0. Other weights are scaled to have sum of 1.0."<<endl;
 				}
 				//compute stackweight.
 				//DEBUG

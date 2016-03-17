@@ -5,14 +5,11 @@
 #include "TraceEditOperator.h"
 using namespace std;
 using namespace SEISPP;
-#define MYZERO 1e-15   //1e-10.
-const string evidkey("eventid");   // not evid to avoid collision
-const string stackstaname("stack");
-const string seperatorsta("stack0");
+   //1e-10.
 /*
 //RFeditor Editing procedures/methods used in RFeditor.
 //
-// Xiaotao Yang Jan - Feb 2015
+// Xiaotao Yang Jan 2015 - Mar 2016
 // Indiana University
 */
 /////////////////////////
@@ -1125,8 +1122,7 @@ set<long> TraceEditOperator::find_false_traces(TimeSeriesEnsemble& tse)
 		vector<TimeSeries>::iterator iptr;
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
 		{
-			if(!iptr->live && iptr->get_string("sta") != stackstaname
-				&& iptr->get_string("sta")!=seperatorsta)
+			if(!iptr->live )
 			{
 				evid=iptr->get_long(evidkey);
 				evids_killed.insert(evid);
@@ -1292,8 +1288,7 @@ bool TraceEditOperator::compute_trace_xcorcoe
 
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
-        	if(iptr->live && iptr->get_string("sta")!=stackstaname
-        		&& iptr->get_string("sta")!=seperatorsta)
+        	if(iptr->live)
         	{
         		revid=iptr->get_int(evidkey);
         		if(revid==ref_evid)
@@ -1338,8 +1333,7 @@ bool TraceEditOperator::compute_trace_xcorcoe
 		//cerr<<"data trace: "<<endl;
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
-            if(iptr->live && iptr->get_string("sta")!=stackstaname
-        		&& iptr->get_string("sta")!=seperatorsta)
+            if(iptr->live)
             {
 				xcor_vector.reserve(refsize);
 				for(i=nstart;i<=nend;++i)
@@ -2022,7 +2016,7 @@ TimeSeries TraceEditOperator::get_stack(TimeSeriesEnsemble& d,TimeWindow twin,
         //TEST FOR MCC
         
         //s.stack=MCC.ArrayBeam();
-        s.stack.put(string("sta"),stackstaname);
+        //s.stack.put(string("sta"),stackstaname);
         result=s.stack;
         /*
         result=MCC.ArrayBeam();
@@ -2038,6 +2032,7 @@ TimeSeries TraceEditOperator::get_stack(TimeSeriesEnsemble& d,TimeWindow twin,
         	result.ns=result.ns + 1;
         }
         */
+        return result;
     } catch(...)
     {//cerr<<"**ERROR in get_stack(): "<<endl;
     	//debug
@@ -2046,8 +2041,7 @@ TimeSeries TraceEditOperator::get_stack(TimeSeriesEnsemble& d,TimeWindow twin,
     	//exit(-1);
     	throw;
     	//end of debug	
-    };
-    return result;
+    };  
 }
 //remove duplicates by evidkey
 //returns number of duplicates.
@@ -2348,8 +2342,8 @@ void TraceEditOperator::apply_kills(TimeSeriesEnsemble& tse, set<long> evids_to_
             if(tptr->live)
             {
 				// Skip stack trace when present 
-				string sta=tptr->get_string("sta");
-				if(sta==stackstaname) continue;
+				//string sta=tptr->get_string("sta");
+				//if(sta==stackstaname) continue;
 				int evid=tptr->get_long(evidkey);
 				if(evid==evid_tmp) cout<<"duplicate evid: "<<evid<<endl;
 				if(evids_to_kill.find(evid)!=evids_to_kill.end())
@@ -2504,8 +2498,7 @@ set<long> TraceEditOperator::kill_large_amplitude_traces(TimeSeriesEnsemble& tse
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
         	vmax=0.0;
-        	if(iptr->live && iptr->get_string("sta")!=stackstaname
-        		&& iptr->get_string("sta")!=seperatorsta)
+        	if(iptr->live)
         	{
         		for(int i=0;i<iptr->ns;++i)
         			if(fabs(iptr->s[i])>=(vmax ))
@@ -2552,8 +2545,7 @@ set<long> TraceEditOperator::kill_negative_FA_traces(TimeSeriesEnsemble& tse,
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
             //amplitude=0.0;
-            if(iptr->live && iptr->get_string("sta")!=stackstaname
-            	&& iptr->get_string("sta")!=seperatorsta)
+            if(iptr->live)
             {
 				string FA_type=find_FirstArrival(*iptr,FA_sensitivity,
 								FA_detect_length,data_shaping_wavelet_type);
@@ -2593,8 +2585,7 @@ set<long> TraceEditOperator::kill_negative_FA_traces(
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
             //amplitude=0.0;
-            if(iptr->live && iptr->get_string("sta")!=stackstaname
-            	&& iptr->get_string("sta")!=seperatorsta)
+            if(iptr->live)
             {
 				TimeSeries tmpts=trim_data(*iptr,FA_search_window);
 				/*
@@ -2807,8 +2798,7 @@ set<long> TraceEditOperator::kill_growing_PCoda_traces(TimeSeriesEnsemble& tse,
 		vector<TimeSeries>::iterator iptr;
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
-            if(iptr->live && iptr->get_string("sta")!=stackstaname
-            	&& iptr->get_string("sta")!=seperatorsta)
+            if(iptr->live)
             {
             	vmax=0.0;
             	vmax_global=0.0;
@@ -2883,8 +2873,7 @@ set<long> TraceEditOperator::kill_growing_PCoda_traces(TimeSeriesEnsemble& tse,
 		vector<TimeSeries>::iterator iptr;
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
-            if(iptr->live && iptr->get_string("sta")!=stackstaname
-            	&& iptr->get_string("sta")!=seperatorsta)
+            if(iptr->live)
             {
             	vmax=0.0; vmax_coda=0.0;
             	vmax_global=0.0;
@@ -3155,8 +3144,7 @@ set<long> TraceEditOperator::kill_by_decon_niteration(TimeSeriesEnsemble& tse,
 		vector<TimeSeries>::iterator iptr;
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
-            if(iptr->live && iptr->get_string("sta")!=stackstaname
-            	&& iptr->get_string("sta")!=seperatorsta)
+            if(iptr->live)
             {
             	int tmp=iptr->get_int(decon_niteration_key);
             	//cerr<<"	"<<tmp<<endl;
@@ -3189,8 +3177,7 @@ set<long> TraceEditOperator::kill_by_decon_nspike(TimeSeriesEnsemble& tse,
 		vector<TimeSeries>::iterator iptr;
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
-            if(iptr->live && iptr->get_string("sta")!=stackstaname
-            	&& iptr->get_string("sta")!=seperatorsta)
+            if(iptr->live)
             {
             	int tmp=iptr->get_int(decon_nspike_key);
             	//cerr<<"	"<<tmp<<endl;
@@ -3226,8 +3213,7 @@ set<long> TraceEditOperator::kill_by_decon_epsilon(TimeSeriesEnsemble& tse,
 		vector<TimeSeries>::iterator iptr;
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
-            if(iptr->live && iptr->get_string("sta")!=stackstaname
-            	&& iptr->get_string("sta")!=seperatorsta)
+            if(iptr->live)
             {
             	double tmp=iptr->get_double(decon_epsilon_key);
             	//cerr<<"	"<<tmp<<endl;
@@ -3264,8 +3250,7 @@ set<long> TraceEditOperator::kill_by_decon_peakamp(TimeSeriesEnsemble& tse,
 		vector<TimeSeries>::iterator iptr;
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
-            if(iptr->live && iptr->get_string("sta")!=stackstaname
-            	&& iptr->get_string("sta")!=seperatorsta)
+            if(iptr->live)
             {
             	double tmp=iptr->get_double(decon_peakamp_key);
             	//cerr<<"	"<<tmp<<endl;
@@ -3301,8 +3286,7 @@ set<long> TraceEditOperator::kill_by_decon_averamp(TimeSeriesEnsemble& tse,
 		vector<TimeSeries>::iterator iptr;
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
-            if(iptr->live && iptr->get_string("sta")!=stackstaname
-            	&& iptr->get_string("sta")!=seperatorsta)
+            if(iptr->live)
             {
             	double tmp=iptr->get_double(decon_averamp_key);
             	//cerr<<"	"<<tmp<<endl;
@@ -3338,8 +3322,7 @@ set<long> TraceEditOperator::kill_by_decon_rawsnr(TimeSeriesEnsemble& tse,
 		vector<TimeSeries>::iterator iptr;
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
-            if(iptr->live && iptr->get_string("sta")!=stackstaname
-            	&& iptr->get_string("sta")!=seperatorsta)
+            if(iptr->live)
             {
             	double tmp=iptr->get_double(decon_rawsnr_key);
             	//cerr<<"	"<<tmp<<endl;
@@ -3469,8 +3452,7 @@ set<long> TraceEditOperator::kill_low_ref_correlation_traces(
 		vector<TimeSeries>::iterator iptr;
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
-            if(iptr->live && iptr->get_string("sta")!=stackstaname
-            	&& iptr->get_string("sta")!=seperatorsta)
+            if(iptr->live)
             {
 				if(iptr->is_attribute_set(xcorcoekey))
 				{	if(iptr->get_double(xcorcoekey) < xcorcoe_min) 
@@ -3522,8 +3504,7 @@ set<long> TraceEditOperator::kill_low_ref_correlation_traces(
 		vector<TimeSeries>::iterator iptr;
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
-            if(iptr->live && iptr->get_string("sta")!=stackstaname
-            	&& iptr->get_string("sta")!=seperatorsta)
+            if(iptr->live)
             {
 				if(iptr->is_attribute_set(xcorcoekey))
 				{	if(iptr->get_double(xcorcoekey) < xcorcoe_min) 
@@ -3578,8 +3559,7 @@ set<long> TraceEditOperator::kill_low_ref_correlation_traces(
 		vector<TimeSeries>::iterator iptr;
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
-            if(iptr->live && iptr->get_string("sta")!=stackstaname
-            	&& iptr->get_string("sta")!=seperatorsta)
+            if(iptr->live)
             {
 				if(iptr->is_attribute_set(xcorcoekey))
 				{	if(iptr->get_double(xcorcoekey) < xcorcoe_min ) 
@@ -3639,8 +3619,7 @@ set<long> TraceEditOperator::kill_low_RFQualityIndex_traces(
 		vector<TimeSeries>::iterator iptr;
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
-            if(iptr->live && iptr->get_string("sta")!=stackstaname
-            	&& iptr->get_string("sta")!=seperatorsta)
+            if(iptr->live)
             {
 				if(iptr->is_attribute_set(RF_quality_index_key))
 				{	if(iptr->get_double(RF_quality_index_key) < qi_min) 
@@ -3686,10 +3665,6 @@ void TraceEditOperator::set_ensemble_live_status(TimeSeriesEnsemble& tse,
 		int i;
 		for(i=0,dptr=tse.member.begin();dptr!=tse.member.end();++dptr,++i)
 		{
-			//if(dptr->get_string("sta")!=stackstaname)
-			//	dptr->live=false;  
-			//if(dptr->get_string("sta")!=seperatorsta)
-			//cerr<<"test "<<i<<endl;
 			dptr->live=live_status;
 			/*
 			if(dptr->live)
@@ -3714,8 +3689,8 @@ void TraceEditOperator::undo_kills_to_trace
         for(tptr=tse.member.begin();tptr!=tse.member.end();++tptr)
         {
 				// Skip stack trace when present 
-				string sta=tptr->get_string("sta");
-				if(sta==stackstaname) continue;
+				//string sta=tptr->get_string("sta");
+				//if(sta==stackstaname) continue;
 				int evid=tptr->get_long(evidkey);
 				if(evids_to_restore.find(evid)!=evids_to_restore.end())
 				{
@@ -3752,11 +3727,15 @@ TraceEditOperator::TraceEditOperator(Metadata& md)
 		this->set_operator_defaults();
 		FA_sensitivity=md.get_double("FA_sensitivity");
 		data_shaping_wavelet_type=md.get_string("data_shaping_wavelet_type");
-		decon_nspike_key=md.get_string("decon_nspike_key");
-		decon_rawsnr_key=md.get_string("decon_rawsnr_key");
-		decon_averamp_key=md.get_string("decon_averamp_key");
-		decon_epsilon_key=md.get_string("decon_epsilon_key");
-		decon_niteration_key=md.get_string("decon_niteration_key");
-		decon_peakamp_key=md.get_string("decon_peakamp_key");
+		bool use_decon_in_editing=md.get_bool("use_decon_in_editing");
+		if(use_decon_in_editing)
+		{
+			decon_nspike_key=md.get_string("decon_nspike_key");
+			decon_rawsnr_key=md.get_string("decon_rawsnr_key");
+			decon_averamp_key=md.get_string("decon_averamp_key");
+			decon_epsilon_key=md.get_string("decon_epsilon_key");
+			decon_niteration_key=md.get_string("decon_niteration_key");
+			decon_peakamp_key=md.get_string("decon_peakamp_key");
+		}
 	}catch(...){throw;}
 }

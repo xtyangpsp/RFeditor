@@ -12,6 +12,8 @@
 #include "TimeWindow.h"
 using namespace std;
 using namespace SEISPP;
+#define MYZERO 1e-15
+const string evidkey("eventid");   // not evid to avoid collision
 const string xcorcoekey("xcorcoe"); //x-correlation coefficience key.
 const string ensemblesortkey("ensemble_sortkey");
 const string killmethodkey("kill_by_method");

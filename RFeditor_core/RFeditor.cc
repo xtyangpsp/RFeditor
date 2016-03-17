@@ -18,10 +18,11 @@
 #include "filter++.h"
 using namespace std;
 using namespace SEISPP;
-#define MYZERO 0.0000000001   //1e-10.
-const string stackstaname("stack");
-const string evidkey("eventid");   // not evid to avoid collision
+//const string evidkey("eventid");   // not evid to avoid collision
 const string tracetype_3c("3C"), tracetype_1c("1C");
+const string MDL_ENSEMBLE("mdlist_ensemble"), MDL_WFDISCIN("mdlist_wfdisc_in"), 
+			MDL_WFDISCOUT("mdlist_wfdisc_out"), MDL_WFPROCESSIN("mdlist_wfprocess_in"),
+			MDL_WFPROCESSOUT("mdlist_wfprocess_out");
 /* Modification History */
 void history_old()
 {
@@ -110,16 +111,18 @@ void history_current()
 	<<" (2) moved klsw up one level before klxcor."<<endl
 <<">> 03/14/2016 XT Yang"<<endl
 	<<" (1) updated tredit v2 table and corresponding routines by adding 'version' entry."<<endl
-<<">> 03/15/2016 XT Yang"<<endl
+<<">> 03/15-17/2016 XT Yang"<<endl
 	<<" (1) blocked LowFrequencyContaminated procedure. Removed dependency on GSL library."<<endl
+	<<" (2) cleaned up lines of old debries. tested wfdisc in and out."<<endl
+	<<" (3) read metadata lists from pf is optional. they are built in now. values in pf will overwrite the built-in values."<<endl
 	<<endl;
 }
 
-const string csversion("v3.7.0.5");
+const string csversion("v3.7.1");
 
 void version()
 {
-	cerr <<"< version "<<csversion<<" > 3/15/2016"<<endl;
+	cerr <<"< version "<<csversion<<" > 3/17/2016"<<endl;
 }
 void author()
 {
@@ -594,7 +597,7 @@ int save_to_db(TimeSeriesEnsemble& r, TimeSeriesEnsemble& t,
         for(dptr=r.member.begin();dptr!=r.member.end();++dptr)
         {
             string sta=dptr->get_string("sta");
-            if(dptr->live && (sta!=stackstaname))
+            if(dptr->live)
             {       	
 				long rec;  
 				outdfile=outdfile_base+"_"+dptr->get_string("sta")+".R";
@@ -646,7 +649,7 @@ int save_to_db(TimeSeriesEnsemble& r, TimeSeriesEnsemble& t,
                 ++nlive;
             }
         }
-		cerr << "Number of radial traces saved = "<<nlive<<endl;
+		//cerr << "Number of radial traces saved = "<<nlive<<endl;
 		//save transverse.
 		nlive=0;
         for(dptr=t.member.begin();dptr!=t.member.end();++dptr)
@@ -704,7 +707,7 @@ int save_to_db(TimeSeriesEnsemble& r, TimeSeriesEnsemble& t,
                 ++nlive;
             }
         }
-        cerr << "Number of transverse traces saved = "<<nlive<<endl;
+        //cerr << "Number of transverse traces saved = "<<nlive<<endl;
         //save vertical is turned on.
         if(save_vertical_channel)
         {
@@ -764,7 +767,7 @@ int save_to_db(TimeSeriesEnsemble& r, TimeSeriesEnsemble& t,
 					nlive++;
 				}
 			}
-			cerr << "Number of vertical traces saved = "<<nlive<<endl;
+			//cerr << "Number of vertical traces saved = "<<nlive<<endl;
         }
         return(nlive);
     }catch(...){throw;};
@@ -773,17 +776,23 @@ int save_to_db(TimeSeriesEnsemble& r, TimeSeriesEnsemble& t,
 int save_to_db(ThreeComponentEnsemble& tce,MetadataList& mdl, 
 				AttributeMap& am, DatascopeHandle& dbh, 
         		string outdir,string outdfile_base,
-        		bool save_metadata_only,bool save_decon_table)
+        		bool save_metadata_only,bool save_decon_table,
+        		string rchan="R", string tchan="T",string zchan="Z",
+        		string outtable="wfprocess")
 {
-	const string outtable("wfprocess");
+	//const string outtable("wfprocess");
 
 	string outdfile;
     DatascopeHandle dbsclink(dbh);
     DatascopeHandle dbevlink(dbh);
     DatascopeHandle dbdecon(dbh);
-	int nsaved=0;
-
-	nsaved=0;
+	int nsaved(0);
+	vector<string> output_channels;
+	output_channels.clear();				
+	output_channels.push_back(tchan);
+	output_channels.push_back(rchan);
+	output_channels.push_back(zchan);
+	
 	dbsclink.lookup("sclink");
 	dbevlink.lookup("evlink");
 	if(save_decon_table) dbdecon.lookup("decon");
@@ -795,36 +804,67 @@ int save_to_db(ThreeComponentEnsemble& tce,MetadataList& mdl,
 		{
 			try {
 				d->put("dir",outdir);
-				outdfile=outdfile_base+"_"+d->get_string("sta")+".3C";
-				d->put("dfile",outdfile);
-				//save db.
-				long rnum;
-				if(save_metadata_only)
-					rnum=dbsave_metadata(*d,dbh.db,outtable,mdl,am);
-				else
-					rnum=dbsave(*d,dbh.db,outtable,mdl,am);
-				rnum++;
-				dbevlink.append();
-				dbevlink.put("evid",d->get_int("evid"));
-				dbevlink.put("pwfid",rnum);
-				dbsclink.append();
-				dbsclink.put("sta",d->get_string("sta"));
-				dbsclink.put("chan","3C");
-				dbsclink.put("pwfid",rnum);
-				if(save_decon_table) 
+				if(outtable=="wfprocess")
 				{
-					dbdecon.append();
-					dbdecon.put("pwfid",rnum);
-					dbdecon.put("sta",d->get_string("sta"));
-					dbdecon.put("chan",d->get_string("decon.chan"));
-					dbdecon.put("niteration",d->get_int("decon.niteration"));
-					dbdecon.put("nspike",d->get_int("decon.nspike"));
-					dbdecon.put("epsilon",d->get_double("decon.epsilon"));
-					dbdecon.put("peakamp",d->get_double("decon.peakamp"));
-					dbdecon.put("averamp",d->get_double("decon.averamp"));
-					dbdecon.put("rawsnr",d->get_double("decon.rawsnr"));
+					outdfile=outdfile_base+"_"+d->get_string("sta")+".3C";
+					d->put("dfile",outdfile);
+					//save db.
+					long rnum;
+					if(save_metadata_only)
+						rnum=dbsave_metadata(*d,dbh.db,outtable,mdl,am);
+					else
+						rnum=dbsave(*d,dbh.db,outtable,mdl,am);
+					rnum++;
+					dbevlink.append();
+					dbevlink.put("evid",d->get_int("evid"));
+					dbevlink.put("pwfid",rnum);
+					dbsclink.append();
+					dbsclink.put("sta",d->get_string("sta"));
+					dbsclink.put("chan","3C");
+					dbsclink.put("pwfid",rnum);
+					if(save_decon_table) 
+					{
+						dbdecon.append();
+						dbdecon.put("pwfid",rnum);
+						dbdecon.put("sta",d->get_string("sta"));
+						dbdecon.put("chan",d->get_string("decon.chan"));
+						dbdecon.put("niteration",d->get_int("decon.niteration"));
+						dbdecon.put("nspike",d->get_int("decon.nspike"));
+						dbdecon.put("epsilon",d->get_double("decon.epsilon"));
+						dbdecon.put("peakamp",d->get_double("decon.peakamp"));
+						dbdecon.put("averamp",d->get_double("decon.averamp"));
+						dbdecon.put("rawsnr",d->get_double("decon.rawsnr"));
+					}
+					nsaved++;
 				}
-				nsaved++;
+				else if(outtable=="wfdisc")
+				{
+					outdfile=string(outdfile_base)+"_"+d->get_string("sta")+".w";
+					d->put("dfile",outdfile);
+					//save db.
+					if(!save_metadata_only)
+						dbsave(*d,dbh.db,outtable,mdl,am,
+								output_channels,true);
+					else
+					{	
+						cerr<<"ERROR in save_to_db(): can't save 3c ensemble to wfdisc table when"<<endl
+							<<"      save_metadata_only is set to true!"<<endl;
+						exit(-1);
+					}
+					if(save_decon_table) 
+					{
+						cerr<<"ERROR in save_to_db(): can't save 3c ensemble to decon table when"<<endl
+							<<"      saving to wfdisc table!"<<endl;
+						exit(-1);
+					}
+					nsaved++;
+				}
+				else
+				{
+					cerr<<"ERROR in save_to_db(): wrong outtable, could be either wfprocess or wfdisc"<<endl;
+					exit(-1);
+				}
+				
 			} catch (SeisppError& serr) {
 				string sta=d->get_string("sta");
 				cerr << "Error saving station "<<sta<<endl;
@@ -837,43 +877,270 @@ int save_to_db(ThreeComponentEnsemble& tce,MetadataList& mdl,
 }
 bool check_continue_mode(bool set_continue_mode_by_default,string laststation)
 {
-	try{
-	bool turn_on_continue_mode(false);
-	string ques;
-	if(set_continue_mode_by_default) 
+	try
 	{
-		turn_on_continue_mode=true;
-		return(turn_on_continue_mode);
-	}
-	else
-	{
-		cout<<"!!! Output table is not empty. Last station you worked on = [ "
-			<<laststation<<" ]."<<endl
-			<<"> Continue working on next station? (y/r/n) "<<endl
-			<<"	y: continue;"<<endl
-			<<"	r: re-do from the beginning. Caution for duplicate rows! "<<endl
-			<<"		Suggest choose this only under review mode;"<<endl
-			<<"	n: quit the program."<<endl<<"> Your choice: ";
-		cin>>ques;
-		if(ques == "y" || ques=="Y") turn_on_continue_mode=true;
-		else if(ques == "r" || ques == "R") 
+		bool turn_on_continue_mode(false);
+		string ques;
+		if(set_continue_mode_by_default) 
 		{
-			turn_on_continue_mode=false;
-			cout<<"!!! CAUTION: if you are not under review mode, "<<endl
-				<<"output wfdisc table will have duplicate rows!"<<endl;
+			turn_on_continue_mode=true;
 			return(turn_on_continue_mode);
 		}
 		else
 		{
-			cout<<"Quited. "<<endl<<"Please clean up the output db "
-				<<"and the data directory."<<endl;
-			exit(-1);
-		}					
-	}
-	return(turn_on_continue_mode);
+			cout<<"!!! Output table is not empty. Last station you worked on = [ "
+				<<laststation<<" ]."<<endl
+				<<"> Continue working on next station? (y/r/n) "<<endl
+				<<"	y: continue;"<<endl
+				<<"	r: re-do from the beginning. Caution for duplicate rows! "<<endl
+				<<"		Suggest choose this only under review mode;"<<endl
+				<<"	n: quit the program."<<endl<<"> Your choice: ";
+			cin>>ques;
+			if(ques == "y" || ques=="Y") turn_on_continue_mode=true;
+			else if(ques == "r" || ques == "R") 
+			{
+				turn_on_continue_mode=false;
+				cout<<"!!! CAUTION: if you are not under review mode, "<<endl
+					<<"output wfdisc table will have duplicate rows!"<<endl;
+				return(turn_on_continue_mode);
+			}
+			else
+			{
+				cout<<"Quited. "<<endl<<"Please clean up the output db "
+					<<"and the data directory."<<endl;
+				exit(-1);
+			}					
+		}
+		return(turn_on_continue_mode);
 	}catch(...){throw;};
 }
+//mdltype: ensemble, wfprocessin, wfdiscin, wfprocessout, wfdiscout
+MetadataList generate_mdlist(string mdltype, bool use_arrival_data=false, bool use_netmag_table=false,
+			bool use_decon_in_editing=false)
+{
+	try
+	{
+		MetadataList mdlist;
+		Metadata_typedef metadata;
+	
+		if(mdltype=="ensemble")
+		{
+			metadata.tag="sta";
+			metadata.mdt=MDstring;
+			mdlist.push_back(metadata);
+		}
+		else if(mdltype=="wfprocessin")
+		{
+			metadata.tag="pwfid"; metadata.mdt=MDint; mdlist.push_back(metadata);
+			metadata.tag="dir"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="dfile"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="time"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="endtime"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="nsamp"; metadata.mdt=MDint; mdlist.push_back(metadata);
+			metadata.tag="samprate"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="datatype"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="timetype"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="foff"; metadata.mdt=MDint; mdlist.push_back(metadata);
+			metadata.tag="wfprocess.algorithm"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="evid"; metadata.mdt=MDint; mdlist.push_back(metadata);
+			metadata.tag="sta"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="chan"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			if(use_decon_in_editing)
+			{
+				metadata.tag="decon.nspike"; metadata.mdt=MDint; mdlist.push_back(metadata);
+				metadata.tag="decon.rawsnr"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+				metadata.tag="decon.averamp"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+				metadata.tag="decon.epsilon"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+				metadata.tag="decon.niteration"; metadata.mdt=MDint; mdlist.push_back(metadata);
+				metadata.tag="decon.peakamp"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+				metadata.tag="decon.chan"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			}
+			if(use_arrival_data)
+			{
+				metadata.tag="atime"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+				metadata.tag="arrival.sta"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+				metadata.tag="assoc.esaz"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+				metadata.tag="assoc.seaz"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			}
+			if(use_netmag_table)
+			{
+				metadata.tag="magtype"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+				metadata.tag="magnitude"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			}
+		}
+		else if(mdltype=="wfprocessout")
+		{
+			metadata.tag="pwfid"; metadata.mdt=MDint; mdlist.push_back(metadata);
+			metadata.tag="time"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="endtime"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="dir"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="dfile"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="datatype"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="timetype"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="samprate"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="nsamp"; metadata.mdt=MDint; mdlist.push_back(metadata);
+			metadata.tag="foff"; metadata.mdt=MDint; mdlist.push_back(metadata);
+			metadata.tag="wfprocess.algorithm"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+		}
+		else if(mdltype=="wfdiscin")
+		{
+			metadata.tag="wfdisc.chan"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="wfdisc.time"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="wfdisc.wfid"; metadata.mdt=MDint; mdlist.push_back(metadata);
+			metadata.tag="wfdisc.chanid"; metadata.mdt=MDint; mdlist.push_back(metadata);
+			metadata.tag="wfdisc.jdate"; metadata.mdt=MDint; mdlist.push_back(metadata);
+			metadata.tag="wfdisc.endtime"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="wfdisc.nsamp"; metadata.mdt=MDint; mdlist.push_back(metadata);
+			metadata.tag="wfdisc.samprate"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="wfdisc.calib"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="wfdisc.calper"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="wfdisc.instype"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="wfdisc.segtype"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="wfdisc.datatype"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="wfdisc.clip"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="wfdisc.dir"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="wfdisc.dfile"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="wfdisc.foff"; metadata.mdt=MDint; mdlist.push_back(metadata);
+			metadata.tag="wfdisc.commid"; metadata.mdt=MDint; mdlist.push_back(metadata);
+			metadata.tag="sta"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="chan"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="time"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="nsamp"; metadata.mdt=MDint; mdlist.push_back(metadata);
+			metadata.tag="samprate"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			if(use_arrival_data)
+			{
+				metadata.tag="atime"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+				metadata.tag="arrival.sta"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+				metadata.tag="assoc.esaz"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+				metadata.tag="assoc.seaz"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			}
+			if(use_netmag_table)
+			{
+				metadata.tag="magtype"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+				metadata.tag="magnitude"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			}
+		}
+		else if(mdltype=="wfdiscout")
+		{
+			metadata.tag="sta"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="chan"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="time"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="endtime"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="nsamp"; metadata.mdt=MDint; mdlist.push_back(metadata);
+			metadata.tag="samprate"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="datatype"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="dir"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="dfile"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="foff"; metadata.mdt=MDint; mdlist.push_back(metadata);
+		}
+		else
+		{
+			cerr<<"ERROR in generate_mdlist(): wrong metadata type!"<<endl;
+			exit(-1);
+		}
+	
+		return(mdlist);
+	}catch(...) {throw;};
+}
 
+void append_decon_attribute_keys(Metadata& md)
+{
+	try
+	{
+		// decon attribute key definition.
+		if(!md.is_attribute_set((char *)"decon_nspike_key")) 
+			md.put("decon_nspike_key", (char *)"decon.nspike");
+		if(!md.is_attribute_set((char *)"decon_rawsnr_key")) 
+			md.put("decon_rawsnr_key",(char *)"decon.rawsnr");
+		if(!md.is_attribute_set((char *)"decon_averamp_key")) 
+			md.put("decon_averamp_key",(char *)"decon.averamp");
+		if(!md.is_attribute_set((char *)"decon_epsilon_key")) 
+			md.put("decon_epsilon_key",(char *)"decon.epsilon");
+		if(!md.is_attribute_set((char *)"decon_niteration_key")) 
+			md.put("decon_niteration_key",(char *)"decon.niteration");
+		if(!md.is_attribute_set((char *)"decon_peakamp_key")) 
+			md.put("decon_peakamp_key",(char *)"decon.peakamp");
+	}catch(...) {throw;};
+}
+
+void append_plot_window_params(Metadata& md)
+{
+	// ******** following are plotting parameters. change ONLY IF necessary. !!!
+	try
+	{
+		cerr<<"test"<<endl;
+		if(!md.is_attribute_set((char *)"SUVariableArea_grey_value")) 
+			md.put("SUVariableArea_grey_value",1);
+		if(!md.is_attribute_set((char *)"VariableArea"))
+			md.put("VariableArea",true);
+		if(!md.is_attribute_set((char *)"WiggleTrace"))
+			md.put("WiggleTrace",true);
+		if(!md.is_attribute_set((char *)"blabel")) md.put("blabel",(char *)"Data");
+		if(!md.is_attribute_set((char *)"blabel2")) md.put("blabel2",(char *)"Data");
+		if(!md.is_attribute_set((char *)"clip_data")) md.put("clip_data",true);
+		if(!md.is_attribute_set((char *)"clip_percent")) md.put("clip_percent",99.5);
+		if(!md.is_attribute_set((char *)"clip_wiggle_traces")) 
+			md.put("clip_wiggle_traces",false);
+		if(!md.is_attribute_set((char *)"d1num")) md.put("d1num",0.0);
+		if(!md.is_attribute_set((char *)"d2num")) md.put("d2num",0.0);
+		if(!md.is_attribute_set((char *)"default_curve_color")) 
+			md.put("default_curve_color",(char *)"black");
+		if(!md.is_attribute_set((char *)"editing_mode")) 
+			md.put("editing_mode",(char *)"single_trace");
+		if(!md.is_attribute_set((char *)"f1num")) md.put("f1num",0.0);
+		if(!md.is_attribute_set((char *)"f2num")) md.put("f2num",0.0);
+		if(!md.is_attribute_set((char *)"first_trace_offset")) 
+			md.put("first_trace_offset",0.0);
+		if(!md.is_attribute_set((char *)"grid1")) md.put("grid1",1);
+		if(!md.is_attribute_set((char *)"grid2")) md.put("grid2",1);
+		if(!md.is_attribute_set((char *)"gridcolor")) md.put("gridcolor",(char *)"blue");
+		if(!md.is_attribute_set((char *)"hbox")) md.put("hbox",5000);
+		if(!md.is_attribute_set((char *)"interpolate")) md.put("interpolate",true);
+		if(!md.is_attribute_set((char *)"label1")) md.put("label1",(char *)"time");
+		if(!md.is_attribute_set((char *)"label2")) md.put("label2",(char *)"index");
+		if(!md.is_attribute_set((char *)"labelcolor")) md.put("labelcolor",(char *)"blue");
+		if(!md.is_attribute_set((char *)"labelfont")) md.put("labelfont",(char *)"Rom14");
+		if(!md.is_attribute_set((char *)"labelsize")) md.put("labelsize",18.0);
+		if(!md.is_attribute_set((char *)"n1tic")) md.put("n1tic",5);
+		if(!md.is_attribute_set((char *)"n2tic")) md.put("n2tic",1);
+		if(!md.is_attribute_set((char *)"plot_file_name")) 
+			md.put("plot_file_name",(char *)"SeismicPlot.ps");
+		if(!md.is_attribute_set((char *)"style")) md.put("style",(char *)"normal");
+		if(!md.is_attribute_set((char *)"time_axis_grid_type")) 
+			md.put("time_axis_grid_type",(char *)"solid");
+		if(!md.is_attribute_set((char *)"time_scaling")) md.put("time_scaling",(char *)"auto");
+		if(!md.is_attribute_set((char *)"title")) md.put("title",(char *)"Receiver");
+		if(!md.is_attribute_set((char *)"titlecolor")) md.put("titlecolor",(char *)"red");
+		if(!md.is_attribute_set((char *)"titlefont")) md.put("titlefont",(char *)"Rom22");
+		if(!md.is_attribute_set((char *)"titlesize")) md.put("titlesize",36.0);
+		if(!md.is_attribute_set((char *)"trace_axis_attribute")) 
+			md.put("trace_axis_attribute",(char *)"assoc.delta");
+		if(!md.is_attribute_set((char *)"trace_axis_grid_type")) 
+			md.put("trace_axis_grid_type",(char *)"none");
+		if(!md.is_attribute_set((char *)"trace_axis_scaling")) 
+			md.put("trace_axis_scaling",(char *)"auto");
+		if(!md.is_attribute_set((char *)"trace_spacing")) md.put("trace_spacing",1.0);
+		if(!md.is_attribute_set((char *)"trim_gap_edges")) md.put("trim_gap_edges",true);
+		if(!md.is_attribute_set((char *)"use_variable_trace_spacing")) 
+			md.put("use_variable_trace_spacing",false);
+		if(!md.is_attribute_set((char *)"verbose")) md.put("verbose",true);
+		if(!md.is_attribute_set((char *)"wbox")) md.put("wbox",950);
+		if(!md.is_attribute_set((char *)"windowtitle")) md.put("windowtitle",(char *)"RFeditor");
+		if(!md.is_attribute_set((char *)"x1beg")) md.put("x1beg",0.0);
+		if(!md.is_attribute_set((char *)"x1end")) md.put("x1end",120.0);
+		if(!md.is_attribute_set((char *)"x2beg")) md.put("x2beg",0.0);
+		if(!md.is_attribute_set((char *)"x2end")) md.put("x2end",24.0);
+		if(!md.is_attribute_set((char *)"xbox")) md.put("xbox",50);
+		if(!md.is_attribute_set((char *)"xcur")) md.put("xcur",1.0);
+		if(!md.is_attribute_set((char *)"ybox")) md.put("ybox",50);
+		if(!md.is_attribute_set((char *)"beam_hbox")) md.put("beam_hbox",250);
+		if(!md.is_attribute_set((char *)"beam_clip_data")) md.put("beam_clip_data",false);
+		if(!md.is_attribute_set((char *)"beam_xcur")) md.put("beam_xcur",1.0);
+		if(!md.is_attribute_set((char *)"beam_xcur")) md.put("beam_xcur",1.0);
+		if(!md.is_attribute_set((char *)"beam_trace_axis_scaling")) 
+			md.put("beam_trace_axis_scaling",(char *)"auto");
+	}catch(...) {throw;};
+}
 /*==================================================================
 //==================================================================
 //====================== Main program ==============================
@@ -1063,9 +1330,48 @@ int main(int argc, char **argv)
         if(GUIoff)
         	trace_edit_params=Metadata(pf,string("auto_edit_parameters"));
         else
+        {
         	trace_edit_params=Metadata(pf,string("gui_edit_parameters"));
+        	append_plot_window_params(trace_edit_params);
+        }
+        //Parameters needed in detecting FA. Use defaults when not set in pf.
+        double FA_detect_length(1.0),FA_sensitivity(10e-4),
+        		FA_search_TW_start(-5.0), FA_search_TW_end(5.0);
+        if(control.is_attribute_set((char *)"FA_detect_length")) 
+        		FA_detect_length=control.get_double("FA_detect_length");
+		if(control.is_attribute_set((char *)"FA_sensitivity"))
+				FA_sensitivity=control.get_double("FA_sensitivity");
+		//Could only be: GAUSSIAN, SPIKE, RICKER (CASE SENSITIVE)
+		string data_shaping_wavelet_type("GAUSSIAN");
+		if(control.is_attribute_set((char *)"data_shaping_wavelet_type"))
+				data_shaping_wavelet_type=control.get_string("data_shaping_wavelet_type");
+		if(control.is_attribute_set((char *)"FA_search_TW_start"))
+				FA_search_TW_start=control.get_double("FA_search_TW_start");
+		if(control.is_attribute_set((char *)"FA_search_TW_end"))
+				FA_search_TW_end=control.get_double("FA_search_TW_end");
+        
+        //put the above FA detection parameters into trace_edit_param metadata object.
+        //use *.is_attribute_set method because old pf read in FA parameters for GUI and GUIoff seperately.
+        if(!trace_edit_params.is_attribute_set((char *)"FA_detect_length"))
+        		trace_edit_params.put("FA_detect_length",FA_detect_length);
+        if(!trace_edit_params.is_attribute_set((char *)"FA_sensitivity"))
+        		trace_edit_params.put("FA_sensitivity",FA_sensitivity);
+        if(!trace_edit_params.is_attribute_set((char *)"data_shaping_wavelet_type"))
+        		trace_edit_params.put("data_shaping_wavelet_type",data_shaping_wavelet_type);
+        if(!trace_edit_params.is_attribute_set((char *)"FA_search_TW_start"))
+        		trace_edit_params.put("FA_search_TW_start",FA_search_TW_start);
+        if(!trace_edit_params.is_attribute_set((char *)"FA_search_TW_end"))
+        		trace_edit_params.put("FA_search_TW_end",FA_search_TW_end);
+        
         ///*Read in parameters from the pf*/
-        MetadataList mdlens=pfget_mdlist(pf,"ensemble_mdl");
+        MetadataList mdlens;
+        if(control.is_attribute_set(MDL_ENSEMBLE))
+        {
+        	mdlens=pfget_mdlist(pf,control.get_string(MDL_ENSEMBLE));
+        }
+        else
+        	mdlens=generate_mdlist("ensemble"); //=pfget_mdlist(pf,"ensemble_mdl");
+        
         MetadataList mdl;
         MetadataList mdlout, mdlout_wfd, mdlout_wfp;
         bool use_arrival_data=control.get_bool("use_arrival_data");
@@ -1075,6 +1381,15 @@ int main(int argc, char **argv)
         //read in preference for use of netmag table
         bool use_netmag_table=control.get_bool("use_netmag_table");
         trace_edit_params.put("use_netmag_table",use_netmag_table);
+		bool use_wfdisc_in=control.get_bool("use_wfdisc_in");
+        if(use_netmag_table && !use_arrival_data && use_wfdisc_in)
+        {
+        	cerr<<"WARNING: bad combination of parameters. When using wfdisc as input"<<endl
+        	    <<" and using netmag table, then use_arrival_data MUST be true!"<<endl
+        	    <<" The program forces use_arrival_data to true by default! Be sure that"<<endl
+        	    <<" arrival, assoc, event, origin, netmag tables are all available."<<endl;
+        	use_arrival_data=true;
+        }
         /*
         //meaningless to read in this attribute.
         bool ThreeComponentMode=control.get_bool("ThreeComponentMode");
@@ -1090,7 +1405,7 @@ int main(int argc, char **argv)
         // this value is the FA time set to the trace for display. The
         //default FA time will be 0.
         double FA_reference_time=control.get_double("FA_reference_time");
-        bool use_wfdisc_in=control.get_bool("use_wfdisc_in");
+
         bool use_decon_in_editing(false);
         bool save_3C_data(false);
         bool save_decon_table(false);
@@ -1100,42 +1415,75 @@ int main(int argc, char **argv)
         bool save_wfprocess_table(false);
         if(use_wfdisc_in)
         {
-        	mdl=pfget_mdlist(pf,"trace_mdl_wfdisc");
+        	//mdl=pfget_mdlist(pf,"trace_mdl_wfdisc");
         	save_wfprocess_table=control.get_bool("save_wfprocess_table");
         	control.put("use_decon_in_editing",false);
         	if(SEISPP_verbose)
         		cout<<"Warning: force use_decon_in_editing "
         			<<"to be false when using wfdisc input."<<endl;
+        	if(control.is_attribute_set(MDL_WFDISCIN))
+			{
+				mdl=pfget_mdlist(pf,control.get_string(MDL_WFDISCIN));
+			}
+			else
+        		mdl=generate_mdlist("wfdiscin",use_arrival_data, use_netmag_table);
+        	
+        	if(control.is_attribute_set(MDL_WFDISCOUT))
+			{
+				mdlout=pfget_mdlist(pf,control.get_string(MDL_WFDISCOUT));
+			}
+			else
+        		mdlout=generate_mdlist("wfdiscout");
+        	if(save_wfprocess_table)
+        	{
+				if(control.is_attribute_set(MDL_WFPROCESSOUT))
+				{
+					mdlout_wfp=pfget_mdlist(pf,control.get_string(MDL_WFPROCESSOUT));
+				}
+				else
+					mdlout_wfp=generate_mdlist("wfprocessout");
+			}
         }
         else
         {
         	save_wfdisc_table=control.get_bool("save_wfdisc_table");
         	save_3C_data=control.get_bool("save_3C_data");
         	use_decon_in_editing=control.get_bool("use_decon_in_editing");
+        	if(control.is_attribute_set(MDL_WFPROCESSIN))
+			{
+				mdl=pfget_mdlist(pf,control.get_string(MDL_WFPROCESSIN));
+			}
+			else
+        		mdl=generate_mdlist("wfprocessin",use_arrival_data, 
+        			use_netmag_table,use_decon_in_editing);
         	if(use_decon_in_editing)
         	{
-        		mdl=pfget_mdlist(pf,"trace_mdl_wfprocess_decon");
+        		//mdl=pfget_mdlist(pf,"trace_mdl_wfprocess_decon");
         		save_decon_table=control.get_bool("save_decon_table");
         	}
-        	else
-        		mdl=pfget_mdlist(pf,"trace_mdl_wfprocess");
-        	
+        	if(control.is_attribute_set(MDL_WFPROCESSOUT))
+			{
+				mdlout_wfp=pfget_mdlist(pf,control.get_string(MDL_WFPROCESSOUT));
+			}
+			else
+        		mdlout=generate_mdlist("wfprocessout");
+        	//mdlout=pfget_mdlist(pf,"output_mdl_wfprocess");
+        	if(save_wfdisc_table)
+        	{
+        		if(control.is_attribute_set(MDL_WFDISCOUT))
+				{
+					mdlout=pfget_mdlist(pf,control.get_string(MDL_WFDISCOUT));
+				}
+				else
+        			mdlout_wfd=generate_mdlist("wfdiscout");
+        	}
         }
+        
         //put these two parameters into the metadata for trace-editing.
         trace_edit_params.put("use_decon_in_editing",use_decon_in_editing);
+        if(use_decon_in_editing) append_decon_attribute_keys(trace_edit_params);
         trace_edit_params.put("FA_reference_time",FA_reference_time);
-        
-        if(use_wfdisc_in)
-        {
-        	mdlout=pfget_mdlist(pf,"output_mdl_wfdisc");
-        	if(save_wfprocess_table)
-        		mdlout_wfp=pfget_mdlist(pf,"output_mdl_wfprocess");
-        }
-        else
-        {	mdlout=pfget_mdlist(pf,"output_mdl_wfprocess");
-        	if(save_wfdisc_table)
-        		mdlout_wfd=pfget_mdlist(pf,"output_mdl_wfdisc");
-        }
+
         string rchan=control.get_string("radial_channel_key");
         string tchan=control.get_string("transverse_channel_key");
         string zchan;
@@ -1153,7 +1501,7 @@ int main(int argc, char **argv)
 			else
 				no_vertical_data=control.get_bool("no_vertical_data");
 			if(!no_vertical_data)
-			{	cerr<<"*** ERROR: wrong parameter comination. Must privie vertical_channel_key"
+			{	cerr<<"*** ERROR: wrong parameter comination. Must privide vertical_channel_key"
 					<<" if vertical data is provided!"<<endl;
 				exit(-1);
 			}
@@ -1197,14 +1545,6 @@ int main(int argc, char **argv)
         	exit(-1);
         }
         
-        vector<string> output_channels;
-        output_channels.clear();
-        if(save_wfdisc_table)
-        {
-			output_channels.push_back(tchan);
-			output_channels.push_back(rchan);
-			output_channels.push_back(zchan);
-        }
         int minrfcutoff=control.get_int("minimum_number_receiver_functions");
         //set_continue_mode_by_default=control.get_bool("set_continue_mode_by_default"); 
         		/*
@@ -1373,6 +1713,8 @@ int main(int argc, char **argv)
         	dbin.db.record=0;
         	string datatype=dbin.get_string("datatype");
         	if(datatype=="c3")	datatype3c=true;
+        	else
+        		save_3C_data=false; //overwrite the value read from pf. 
         	if(use_decon_in_editing)
         	{	
         		dbin.natural_join("decon");
@@ -1621,7 +1963,7 @@ int main(int argc, char **argv)
 						atime=im->get_double("atime");
 						im->ator(atime-FA_reference_time);
 						//DEBUG
-						cout<<"t0="<<im->t0<<", endtime="<<im->endtime()<<endl;
+						//cout<<"t0="<<im->t0<<", endtime="<<im->endtime()<<endl;
 					}
 					else
 					{
@@ -1634,24 +1976,40 @@ int main(int argc, char **argv)
 					
 					im->put(moveout_keyword,0.0);
 				}
+				//TimeWindow twin0=teo.find_common_timewindow(dall);
+                    //debug common window
+                  //  cout<<"debug: twin.start="<<twin0.start<<", end="<<twin0.end<<endl;
+                   // cout<<"debug: twin length="<<twin0.end-twin0.start<<endl;
 				/* Could do this with the database, but I chose this 
 				   algorithm because I think it will be more robust.
 				   Main reason is I can use only a string fragment for
 				   a match instead of demanding a full match */
 
-				try {
+				try 
+				{
 					radial=extract_by_chan(dall,rchan);
 					cout << "Found "<<radial.member.size()
 						<<" radial component RFs"<<endl;
 					transverse=extract_by_chan(dall,tchan);
 					cout << "Found "<<transverse.member.size()
 						<<" transverse component RFs"<<endl;
-					if(save_vertical_channel || edit_on_vertical) 
-					{
-						vertical=extract_by_chan(dall,zchan);
-						cout << "Found "<<vertical.member.size()
-							<<" vertical component RFs"<<endl;
+					if(!no_vertical_data)
+					{	if(save_vertical_channel || edit_on_vertical) 
+						{
+							vertical=extract_by_chan(dall,zchan);
+							cout << "Found "<<vertical.member.size()
+								<<" vertical component RFs"<<endl;
+						}
 					}
+					else
+					{
+						vertical=radial;
+						for(im=vertical.member.begin();im!=vertical.member.end();++im)
+						{	
+							im->put("chan",zchan);
+							std::fill(im->s.begin(),im->s.end(),0.0);
+						}
+					}	
 				}catch(SeisppError& serr)
 				{
 					cerr << "Problems in extract_by_chan.  Message "
@@ -1783,21 +2141,15 @@ int main(int argc, char **argv)
             int j=set_duplicate_traces_to_false(tse_edit,false);
             if(j>0 && SEISPP_verbose)
             	cout<<"Duplicate traces in "<<edit_on_channel<<" (set to false) = "<<j<<endl;
-            /*
-            if(pre_edit_FA && !edit_on_radial)
-            {
-				j=set_duplicate_traces_to_false(radial,false);
-				if(j>0 && SEISPP_verbose)
-					cout<<"FA on: Duplicate traces in radial (set to false) = "<<j<<endl;
-            }
-            */
+
             //kill timeseries with t0>0
             for(long i=0;i<tse_edit.member.size();i++)
             {
             	if(tse_edit.member[i].t0>FA_reference_time+MYZERO)
             		{
             			cout<<"***Set trace with t0 > FA_reference_time to FALSE!"<<endl
-            				<<"    Start time:"<<strtime(tse_edit.member[i].get_double(string("time")))<<endl;
+            				<<"    Start time:"
+            				<<strtime(tse_edit.member[i].get_double(string("time")))<<endl;
             			tse_edit.member[i].live=false;
             			//transverse.member[i].live=false;
             			//if(pre_edit_FA && !edit_on_radial) radial.member[i].live=false;
@@ -1836,6 +2188,8 @@ int main(int argc, char **argv)
 				{
 					//TimeWindow twin(radial.member[0].t0,radial.member[0].endtime());
                     TimeWindow twin=teo.find_common_timewindow(tse_edit);
+                    //debug common window
+                    //cout<<"debug: twin.start="<<twin.start<<", end="<<twin.end<<endl;
                     //teo.convolve_ensemble(wavelet,radial,true,&twin);
                     if(SEISPP_verbose) 
 						cout<<"Convolving "<<edit_on_channel<<" ensemble with wavelet: "<<wavelet_type<<" ..."<<endl;
@@ -1855,13 +2209,8 @@ int main(int argc, char **argv)
 			//compute FA and write them out into a text file.
 			{
 				if(SEISPP_verbose) cout<<"Detecting first arrivals before applying editings ..."<<endl;
-				double FA_detect_length=trace_edit_params.get_double("FA_detect_length");
-				double FA_sensitivity=trace_edit_params.get_double("FA_sensitivity");
-				string data_shaping_wavelet_type=
-						trace_edit_params.get_string("data_shaping_wavelet_type");
-				TimeWindow FA_search_window=TimeWindow(
-						trace_edit_params.get_double("FA_search_TW_start")+FA_reference_time,
-						trace_edit_params.get_double("FA_search_TW_end")+FA_reference_time);
+				TimeWindow FA_search_window=TimeWindow(FA_search_TW_start+FA_reference_time,
+							FA_search_TW_end+FA_reference_time);
 				vector<TimeSeries>::iterator iptr;
 				TimeSeriesEnsemble tse_tmp(tse_edit);
 				//if(!edit_on_radial) tse_tmp=radial0;
@@ -1954,13 +2303,8 @@ int main(int argc, char **argv)
 						TimeSeriesEnsemble tse_tmp=teo.exclude_false_traces(tse_edit);
 						if(SEISPP_verbose) 
 							cout<<"Getting FA: Detecting first arrivals after applying editings ..."<<endl;
-						double FA_detect_length=trace_edit_params.get_double("FA_detect_length");
-						double FA_sensitivity=trace_edit_params.get_double("FA_sensitivity");
-						string data_shaping_wavelet_type=
-								trace_edit_params.get_string("data_shaping_wavelet_type");
-						TimeWindow FA_search_window=TimeWindow(
-								trace_edit_params.get_double("FA_search_TW_start")+FA_reference_time,
-								trace_edit_params.get_double("FA_search_TW_end")+FA_reference_time);
+						TimeWindow FA_search_window=TimeWindow(FA_search_TW_start+FA_reference_time,
+									FA_search_TW_end+FA_reference_time);
 						vector<TimeSeries>::iterator iptr;
 						for(iptr=tse_tmp.member.begin(); iptr!=tse_tmp.member.end();iptr++)
 						{
@@ -2044,26 +2388,10 @@ int main(int argc, char **argv)
                         if(save_wfdisc_table)
                         {
 							if(SEISPP_verbose) cout <<"Saving to db (wfdisc). Please wait ..."<<endl;
-							string outdfile=string(outdfile_base)+"_"+string(sta)+".w";
-							vector<ThreeComponentSeismogram>::iterator d;
-							int i;
-							for(d=dall_3c.member.begin(),i=0;d!=dall_3c.member.end();++d,++i)
-							{
-								if(d->live)
-								{
-									try 
-									{
-										d->put("dir",outdir);
-										d->put("dfile",outdfile);
-										//save db.
-										dbsave(*d,dbhwfdisc.db,string("wfdisc"),mdlout_wfd,am,
-												output_channels,true);
-									} catch (SeisppError& serr) {
-										string sta=d->get_string("sta");
-										cerr << "Error saving station to wfdisc: "<<sta<<endl;
-										serr.log_error();}
-								}
-							}
+							outtable="wfdisc";
+							save_to_db(dall_3c,mdlout_wfd,
+									am,dbout,outdir,outdfile_base,
+									save_metadata_only,false,rchan,tchan,zchan,outtable);
 						}
 						//saving edits to db.
 						if(SEISPP_verbose) cout <<"Saving to db (wfprocess). Please wait ..."<<endl;
@@ -2088,6 +2416,15 @@ int main(int argc, char **argv)
 									if(SEISPP_verbose) cout<<"Applying kills to radial."<<endl;
 									//cout<<"rkill size: "<<rkills.size()<<endl;
 									teo.apply_kills(radial,evids_killed);
+									
+									if(SEISPP_verbose) cout<<"Applying kills to transverse."<<endl;
+									teo.apply_kills(transverse,evids_killed);
+									//kill vertical if turned on "save vertical channel"
+									if(save_vertical_channel)
+									{
+										if(SEISPP_verbose) cout<<"Applying kills to vertical ..."<<endl;
+										teo.apply_kills(vertical,evids_killed);
+									}
 								}
 							}
 							else  //save filtered data
@@ -2095,6 +2432,7 @@ int main(int argc, char **argv)
 								if(wavelet_type=="filter")
 								{	
 									TimeInvariantFilter filter(filterspec);
+									SEISPP::FilterEnsemble(radial,filter);
 									SEISPP::FilterEnsemble(vertical,filter);
 									SEISPP::FilterEnsemble(transverse,filter);
 								}
@@ -2102,6 +2440,7 @@ int main(int argc, char **argv)
 								{
 									//TimeWindow twin(radial.member[0].t0,radial.member[0].endtime());
                                     TimeWindow twin=teo.find_common_timewindow(radial);
+                                    teo.convolve_ensemble(wavelet,radial,true,&twin);
 									teo.convolve_ensemble(wavelet,vertical,true,&twin);
 									teo.convolve_ensemble(wavelet,transverse,true,&twin);
 								}
@@ -2112,6 +2451,15 @@ int main(int argc, char **argv)
 									if(SEISPP_verbose) cout<<"Applying kills to radial."<<endl;
 									//cout<<"rkill size: "<<rkills.size()<<endl;
 									teo.apply_kills(radial,evids_killed);
+									
+									if(SEISPP_verbose) cout<<"Applying kills to transverse."<<endl;
+									teo.apply_kills(transverse,evids_killed);
+									//kill vertical if turned on "save vertical channel"
+									if(save_vertical_channel)
+									{
+										if(SEISPP_verbose) cout<<"Applying kills to vertical ..."<<endl;
+										teo.apply_kills(vertical,evids_killed);
+									}
 								}
 							}
 						}
@@ -2123,29 +2471,19 @@ int main(int argc, char **argv)
 									if(SEISPP_verbose) cout<<"Applying kills to radial."<<endl;
 									//cout<<"rkill size: "<<rkills.size()<<endl;
 									teo.apply_kills(radial,evids_killed);
+									
+									if(SEISPP_verbose) cout<<"Applying kills to transverse."<<endl;
+									teo.apply_kills(transverse,evids_killed);
+									//kill vertical if turned on "save vertical channel"
+									if(save_vertical_channel)
+									{
+										if(SEISPP_verbose) cout<<"Applying kills to vertical ..."<<endl;
+										teo.apply_kills(vertical,evids_killed);
+									}
 								}
 						}
-						if(evids_killed.size()>0)
-						{
-							//debug
-							if(SEISPP_verbose) cout<<"Applying kills to transverse."<<endl;
-							teo.apply_kills(transverse,evids_killed);
-						}
-							/*
-							if(tkills.size()>0)
-							{
-								if(SEISPP_verbose) cout<<"applying kills to transverse."<<endl;
-								//events_to_kill=teo.apply_kills(transverse,tkills);
-								teo.apply_kills(transverse,tkills);
-								teo.apply_kills(radial,tkills);
-							}
-							*/
-							//kill vertical if turned on "save vertical channel"
-						if(evids_killed.size()>0 && save_vertical_channel)
-						{
-							if(SEISPP_verbose) cout<<"Applying kills to vertical ..."<<endl;
-							teo.apply_kills(vertical,evids_killed);
-						}
+						
+						
 						// change time reference to absolute.
 						double t0;
 						for(im=radial.member.begin();im!=radial.member.end();++im)
@@ -2162,10 +2500,9 @@ int main(int argc, char **argv)
 								im->rtoa(t0);
 							}
 							//Fragile way to handle this, but skip stack traces
-							if((im->get_string("sta"))==stackstaname) continue;
-							if(!(im->live))
-								logfile << "Deleting " <<sta<<":"<< im->get_string("chan")
-									<< " for time "<<strtime(t0)<<endl;
+							//if(!(im->live))
+							//	logfile << "Deleting " <<sta<<":"<< im->get_string("chan")
+							//		<< " for time "<<strtime(t0)<<endl;
 						
 						}
 					
@@ -2201,54 +2538,40 @@ int main(int argc, char **argv)
 								}
 							}
 						//saving edits to db.
-						if(SEISPP_verbose) cout <<"Saving to db. Please wait ..."<<endl;  
-						//Xiaotao Yang 1/16/2015
-						//DEBUG
-						if(use_wfdisc_in) 
-							outtable="wfdisc";
-						else
+						
+						if(!use_wfdisc_in) 
+						{	
+							
+							if(save_wfdisc_table)
+							{
+								if(SEISPP_verbose) cout <<"Saving to db (wfdisc). Please wait ..."<<endl;  
+								nsaved=save_to_db(radial,transverse,vertical,mdlout_wfd,
+										am,dbout,outdir,outdfile_base,
+										save_metadata_only,save_vertical_channel,
+										save_decon_table,rchan, tchan, zchan,"wfdisc");
+							}
 							outtable="wfprocess";
-					
+						}
+						else
+						{
+							if(save_wfprocess_table)
+							{
+								if(SEISPP_verbose) cout <<"Saving to db (wfprocess). Please wait ..."<<endl;  
+								nsaved=save_to_db(radial,transverse,vertical,mdlout_wfp,
+										am,dbout,outdir,outdfile_base,
+										save_metadata_only,save_vertical_channel,
+										save_decon_table,rchan, tchan, zchan,"wfprocess");
+							}
+							outtable="wfdisc";
+						}
+						
+						if(SEISPP_verbose) cout <<"Saving to db ("<<outtable<<"). Please wait ..."<<endl;
 						nsaved=save_to_db(radial,transverse,vertical,mdlout,
 										am,dbout,outdir,outdfile_base,
 										save_metadata_only,save_vertical_channel,
 										save_decon_table,rchan, tchan, zchan,outtable);
 					}
-					//save wfdisc table seperately if use wfprocess as input
-					/*
-					if(!use_wfdisc_in && save_wfdisc_table)
-					{
-						string outdfile=string(outdfile_base)+"_"+string(sta)+".w";
-						if(datatype3c)
-						{	
-							vector<ThreeComponentSeismogram>::iterator d;
-							int i;
-							for(d=dall_3c.member.begin(),i=0;d!=dall_3c.member.end();++d,++i)
-							{
-								if(d->live)
-								{
-									try 
-									{
-										d->put("dir",outdir);
-										d->put("dfile",outdfile);
-										//save db.
-										dbsave(*d,dbhwfdisc.db,string("wfdisc"),mdlout_wfd,am,
-												output_channels,true);
-									} catch (SeisppError& serr) {
-										string sta=d->get_string("sta");
-										cerr << "Error saving station to wfdisc: "<<sta<<endl;
-										serr.log_error();}
-								}
-							}
-						}
-						else
-						{
-							cerr<<"ERROR in saving to wfdisc table. "
-								<<"Not ready for 1c wfprocess datatype yet."<<endl;
-							exit(-1);
-						}
-
-					}*/
+					
 					logfile << "Saved "<<nsaved<<" RFs for station "<<sta<<endl;
 					if(SEISPP_verbose) cout << "Saved "<<nsaved<<" RFs for station "<<sta<<endl;
 				}

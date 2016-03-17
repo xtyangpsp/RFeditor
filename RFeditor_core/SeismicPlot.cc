@@ -1,5 +1,3 @@
-// Needed only for debug.  Eventually should go
-// private copy by Xiaotao Yang 1/16/2015
 #include <iostream>
 #include <X11/Xthreads.h>
 #include <boost/thread/thread.hpp>
@@ -14,10 +12,6 @@ using namespace SEISPP;
 #define APP_CLASS "seismicplot"
 // this constant cloned from dbxcor
 #define MAINFORM_GRID_CNT 15
-#define MYZERO 1e-15
-const string evidkey("eventid");   // not evid to avoid collision
-const string stackstaname("stack");
-const string seperatorsta("stack0");
 /* This is cloned from dbxcor.  It is used as a compact data structure to sent to 
    a procedure immediately below (BuildMenu) that constructs a widget based on this specification*/
 typedef struct _menu_item
@@ -4328,7 +4322,7 @@ void TraceEditPlot::build_sort_menu()
 // }
 void TraceEditPlot::build_tools_menu()
 {
-		MenuItem tools_filter_gaussian_submenu[]={
+	MenuItem tools_filter_gaussian_submenu[]={
 		{(char *)"<Apply>",
         &xmPushButtonGadgetClass,(char)NULL,
         (char *)NULL,(char *)NULL,
@@ -4435,11 +4429,13 @@ void TraceEditPlot::build_tools_menu()
         (char *)NULL,(char *)NULL,
         NULL,
         this,NULL,tools_compute_decon_submenu},
+        /*
         {(char *)"Apply Filter",
         &xmPushButtonGadgetClass,(char)NULL,
         (char *)NULL,(char *)NULL,
         NULL,
         this,NULL,tools_filter_submenu},
+        */
         {NULL,NULL,(char)NULL,(char *)NULL,(char *)NULL,NULL,NULL,NULL,(MenuItem *)NULL}
     };
     menu_tools=BuildMenu(menu_bar,XmMENU_PULLDOWN,

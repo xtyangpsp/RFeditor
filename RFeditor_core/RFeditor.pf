@@ -33,7 +33,7 @@ wavelet_normalization_method PEAK
 #output parameters
 ##ignored if reading from wfdisc (use_wfdisc_in is true)
 save_wfdisc_table false #true  # use channel keys define above writing to the table.
-
+save_wfprocess_table true
 save_3C_data true  #data will be saved in datatype 3c. 
 					#this is applicable only if input is wfprocess and with datatype 3c
 save_decon_table true  #decon parameters for all three components are saved.
@@ -47,49 +47,50 @@ output_dfile_base RFedited  # dfile will be something like: RFedited_KF28.IR for
 #mdl parameters.
 use_wfdisc_in false  #use wfprocess table if false for input data.
 
+#FA detection parameters. Not required if FA detection is not turned on. Use -fa option when running RFeditor to turn it on.
+#sensitivity in amplitude: turn on detection only if the amplitude is 
+#>= this value. this is used in TraceEditOperator object.
+FA_sensitivity 10e-4
+
+#time window length for FA detection.
+#program searches for FA within this length after first non-zero
+#values (>=FA_sensitivity)
+#impirical value for reference: >=4*gaussian_sigma for gaussian
+#or 1.5*ricker_side_lope_distance for ricker
+FA_detect_length 0.8
+
+FA_search_TW_start -5
+FA_search_TW_end 5
+
+#this is referenced when detecting the first arrivals
+#this is the wavelet type used to generate the receiver functions
+#, which is input of the RFeditor program. 
+# ** use ricker if ricker was used in either deconvolution of pre-filtering process.
+#available types: SPIKE, GAUSSIAN, RICKER (CASE SENSITIVE)
+#this parameter is readin just once when the TraceEditOperator object is built.
+data_shaping_wavelet_type GAUSSIAN
+
 #this is required under GUIoff mode.
-auto_edit_parameters &Arr{
-	#sensitivity in amplitude: turn on detection only if the amplitude is 
-	#>= this value. this is used in TraceEditOperator object.
-	FA_sensitivity 10e-4
-	
-	#this is referenced when detecting the first arrivals
-	#this is the wavelet type used to generate the receiver functions
-	#, which is input of the RFeditor program. 
-	# ** use ricker if ricker was used in either deconvolution of pre-filtering process.
-	#available types: SPIKE, GAUSSIAN, RICKER (CASE SENSITIVE)
-	#this parameter is readin just once when the TraceEditOperator object is built.
-	data_shaping_wavelet_type GAUSSIAN
-	
-	#time window length for FA detection.
-	#program searches for FA within this length after first non-zero
-	#values (>=FA_sensitivity)
-	FA_detect_length 0.8
-		
-	FA_search_TW_start -5
-	FA_search_TW_end 5
-	
-apply_klat false
+auto_edit_parameters &Arr{	
+	apply_klat false
 
-apply_decon_ALL true
-apply_kdnitn false
-apply_kdnspike false
-apply_kdepsilon false
-apply_kdpkamp false
-apply_kdavamp false
-apply_kdsnr false
-apply_kldsi true
+	apply_decon_ALL true
+	apply_kdnitn false
+	apply_kdnspike false
+	apply_kdepsilon false
+	apply_kdpkamp false
+	apply_kdavamp false
+	apply_kdsnr false
+	apply_kldsi true
 
-apply_knfa true
-apply_kgpc true
-apply_kca true
+	apply_knfa true
+	apply_kgpc true
+	apply_kca true
 
-apply_klsw true
-apply_klxcor true
-apply_klrfqi true
+	apply_klsw true
+	apply_klxcor true
+	apply_klrfqi true
 	
-	#min_normalized_FA_amplitude 0.6   #normalized by the max amplitude of the trace.
-	#amplitude_normalization_method LOCAL_MAX  
 	NFA_tolerance_TW_start -2
 	NFA_tolerance_TW_end 5
 	PCoda_search_TW_start 5.0
@@ -141,39 +142,7 @@ gui_edit_parameters &Arr{
 	#stacktype RobustSNR
 	robust_window_start -1
 	robust_window_end 10
-	
-	#sensitivity in amplitude: turn on detection only if the amplitude is 
-	#>= this value. this is used in TraceEditOperator object.
-	FA_sensitivity 10e-4
-	
-	#time window length for FA detection.
-	#program searches for FA within this length after first non-zero
-	#values (>=FA_sensitivity)
-	#impirical value for reference: >=4*gaussian_sigma for gaussian
-	#or 1.5*ricker_side_lope_distance for ricker
-	FA_detect_length 0.8
-	
-	FA_search_TW_start -5
-	FA_search_TW_end 5
-	
-	#this is referenced when detecting the first arrivals
-	#this is the wavelet type used to generate the receiver functions
-	#, which is input of the RFeditor program. 
-	# ** use ricker if ricker was used in either deconvolution of pre-filtering process.
-	#available types: SPIKE, GAUSSIAN, RICKER (CASE SENSITIVE)
-	#this parameter is readin just once when the TraceEditOperator object is built.
-	data_shaping_wavelet_type GAUSSIAN
-	
-	# parameters/default values for GUI mode auto-killing.
-	# all time windows are relative to first arrival (0.0 second).
-	#min_normalized_FA_amplitude 0.0   #normalized by the max amplitude of the trace.
-	#amplitude_normalization_method LOCAL_MAX  
-	#could only be either GLOBAL_MAX, GLOBAL_FA_MAX or LOCAL_MAX
-	
-	#needed by kill low frequency contaminated traces
-	LowFrequency_min 0.01
-	LowFrequency_max 0.1
-	
+		
 	NFA_tolerance_TW_start -2
 	NFA_tolerance_TW_end 5
 	PCoda_search_TW_start 5
@@ -184,19 +153,9 @@ gui_edit_parameters &Arr{
 	CodaCA_search_TW_end 20.0
 	CodaCA_tolerance_twin_length 5   #recommend: 5*(filter width in time-domain).
 	RefXcor_search_TW_start -1
-        RefXcor_search_TW_end 10
-	#********* end of killing parameters.**********************
-
-	# decon attribute key definition.
-	# make sure they are consistent with those in trace_mdl_wfprocess{}.
-	decon_nspike_key decon.nspike
-	decon_rawsnr_key decon.rawsnr
-	decon_averamp_key decon.averamp
-	decon_epsilon_key decon.epsilon
-	decon_niteration_key decon.niteration
-	decon_peakamp_key decon.peakamp
-	
-	#decon parameter threshold: default values.
+    RefXcor_search_TW_end 10
+    
+    #decon parameter threshold: default values.
 	niteration_min 20
 	niteration_max 1000
 	nspike_min 20
@@ -209,6 +168,16 @@ gui_edit_parameters &Arr{
 	averamp_max 1
 	rawsnr_min 1
 	rawsnr_max 1000
+	#********* end of killing parameters.**********************
+
+	# decon attribute key definition.
+	# make sure they are consistent with those in trace_mdl_wfprocess{}.
+	decon_nspike_key decon.nspike
+	decon_rawsnr_key decon.rawsnr
+	decon_averamp_key decon.averamp
+	decon_epsilon_key decon.epsilon
+	decon_niteration_key decon.niteration
+	decon_peakamp_key decon.peakamp
 	
 	# ******** following are plotting parameters. change ONLY IF necessary. !!!
 	SUVariableArea_grey_value	1
@@ -270,6 +239,13 @@ gui_edit_parameters &Arr{
 	beam_trace_axis_scaling auto
 }
 ################################################################
+#specify metadata lists (names)
+mdlist_ensemble ensemble_mdl
+mdlist_wfdisc_in trace_mdl_wfdisc
+mdlist_wfdisc_out output_mdl_wfdisc
+mdlist_wfprocess_in trace_mdl_wfprocess_decon
+mdlist_wfprocess_out output_mdl_wfprocess
+
 # output and input talbe types should be the same. i.e., 
 # must use wfdisc as output if use it as input. same for wfprocess
 ensemble_mdl	&Tbl{
