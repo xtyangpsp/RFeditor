@@ -1068,7 +1068,7 @@ void append_plot_window_params(Metadata& md)
 	// ******** following are plotting parameters. change ONLY IF necessary. !!!
 	try
 	{
-		cerr<<"test"<<endl;
+		//cerr<<"test"<<endl;
 		if(!md.is_attribute_set((char *)"SUVariableArea_grey_value")) 
 			md.put("SUVariableArea_grey_value",1);
 		if(!md.is_attribute_set((char *)"VariableArea"))
