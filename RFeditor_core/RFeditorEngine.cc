@@ -876,9 +876,9 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
 			if(apply_klrfqi)
 			{
 				min_rfqi=md.get_double("rfqi_min");
-				RFQI_weights[0]=md.get_double("RFQI_weigth_stackweight");
-				RFQI_weights[1]=md.get_double("RFQI_weigth_refxcorcoe");
-				RFQI_weights[2]=md.get_double("RFQI_weigth_successindex");
+				RFQI_weights[0]=md.get_double("RFQI_weight_stackweight");
+				RFQI_weights[1]=md.get_double("RFQI_weight_refxcorcoe");
+				RFQI_weights[2]=md.get_double("RFQI_weight_successindex");
 				if(use_decon_in_editing)
 				{
 					//compute decon success index.
