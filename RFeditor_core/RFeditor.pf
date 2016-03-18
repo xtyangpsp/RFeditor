@@ -102,9 +102,9 @@ auto_edit_parameters &Arr{
 	max_trace_abs_amplitude 100    #true amplitude (as stored in the data).
 	CodaCA_tolerance_twin_length 5
 	PCoda_grow_tolerance 0.0
-	RFQI_weigth_stackweight 0.2
-	RFQI_weigth_refxcorcoe  0.3
-	RFQI_weigth_successindex  0.5
+	RFQI_weight_stackweight 0.2
+	RFQI_weight_refxcorcoe  0.3
+	RFQI_weight_successindex  0.5
 	rfqi_min  0.6
 	
 	niteration_min 20
