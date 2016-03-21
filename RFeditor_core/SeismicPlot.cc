@@ -3084,76 +3084,85 @@ void TraceEditPlot::do_beam_plot()
     int n;
     Arg args[10];
     
-    int beam_hbox=250;
-	beam_hbox=metadata.get_int("beam_hbox");
-	bool beam_clip_data=metadata.get_bool("beam_clip_data");
-	double beam_trace_spacing=metadata.get_double("beam_trace_spacing");
-	double beam_xcur=metadata.get_double("beam_xcur");
-	string beam_trace_axis_scaling=metadata.get_string("beam_trace_axis_scaling");
-	int wbox=metadata.get_int("wbox");
-    rshell_beam=XtVaCreatePopupShell ("Beam Plot",topLevelShellWidgetClass, 
-    			get_top_shell(seisw[0]),XmNtitle,"Beam Plot",XmNallowShellResize,
-    			True,XmNwidth,wbox+50,XmNheight,beam_hbox+100,XmNdeleteResponse,XmUNMAP,NULL);
-    pane = XtVaCreateWidget("Beam Plot",xmPanedWindowWidgetClass, 
-    			rshell_beam,NULL);
+    try
+    {
+		int beam_hbox=250;
+		beam_hbox=metadata.get_int("beam_hbox");
+		bool beam_clip_data=metadata.get_bool("beam_clip_data");
+		double beam_trace_spacing=metadata.get_double("beam_trace_spacing");
+		double beam_xcur=metadata.get_double("beam_xcur");
+		string beam_trace_axis_scaling=metadata.get_string("beam_trace_axis_scaling");
+		int wbox=metadata.get_int("wbox");
+		rshell_beam=XtVaCreatePopupShell ("Beam Plot",topLevelShellWidgetClass, 
+					get_top_shell(seisw[0]),XmNtitle,"Beam Plot",XmNallowShellResize,
+					True,XmNwidth,wbox+50,XmNheight,beam_hbox+100,XmNdeleteResponse,XmUNMAP,NULL);
+		pane = XtVaCreateWidget("Beam Plot",xmPanedWindowWidgetClass, 
+					rshell_beam,NULL);
 	
-    Metadata beam_display_md(metadata);
-    beam_display_md.put("title",beam_tse.get_string("beam_title"));
-    beam_display_md.put("hbox",beam_hbox);
-    beam_display_md.put("clip_data",beam_clip_data);
-    beam_display_md.put("blabel",(char *)"Beam Window");
-    beam_display_md.put("blabel2",(char *)"Beam Window");
-    beam_display_md.put("trace_spacing",beam_trace_spacing);
-    beam_display_md.put("xcur",beam_xcur);
-    beam_display_md.put("trace_axis_scaling",beam_trace_axis_scaling);
+		Metadata beam_display_md(metadata);
+		beam_display_md.put("title",beam_tse.get_string("beam_title"));
+		beam_display_md.put("hbox",beam_hbox);
+		beam_display_md.put("clip_data",beam_clip_data);
+		beam_display_md.put("blabel",(char *)"Beam Window");
+		beam_display_md.put("blabel2",(char *)"Beam Window");
+		beam_display_md.put("trace_spacing",beam_trace_spacing);
+		beam_display_md.put("xcur",beam_xcur);
+		beam_display_md.put("trace_axis_scaling",beam_trace_axis_scaling);
+   
+		TimeSeriesEnsemble *comp_tmp;
+		comp_tmp=new TimeSeriesEnsemble(beam_tse);
+		n=0;
+		/*Previous had this.  This disables callbacks for MB3
+		XtSetArg(args[n],(char *) ExmNdisplayOnly,1); n++;
+		**************************************/
+		XtSetArg(args[n],XmNpaneMinimum,100); n++;
+		XtSetArg(args[n],XmNmarginHeight,100);n++;
+		// Don't think this is really necessary or desirable
+		//XtSetArg(args[n],(char *) ExmNcleanupData, static_cast<XtPointer>(beam_tse));n++;
+
+		beam_widget=ExmCreateSeisw(pane,(char *) "Beam Plot",args,n);
+
+		XtManageChild(beam_widget);
+		/* the Seisw widget always initializes with a NULL data pointer.
+		The following is necessary to get the data to display and to
+		show pick markers */
+		//DisplayMarkerDataRec tracemarkers;
+		/*
+		tracemarkers.beam_tw=TimeWindow(10,10);
+		tracemarkers.beam_color="red";
+		tracemarkers.title="testpick";
+		tracemarkers.robust_tw=TimeWindow(8,12);
+		tracemarkers.robust_color="blue";
+		*/
+		//XtVaSetValues(beam_widget,ExmNdisplayMarkers,(XtPointer)(&(tracemarkers)),NULL);
+	
+		XtVaSetValues(beam_widget,
+			ExmNseiswEnsemble,static_cast<XtPointer>(comp_tmp),
+			ExmNseiswMetadata,&beam_display_md,
+			ExmNdisplayMarkers,(XtPointer)(&(plotboxmarkers)),NULL);
+		//display tracemarkers.
+		//XtVaSetValues(beam_widget,ExmNdisplayMarkers,(XtPointer)(&(tracemarkers)),NULL);
+	
+		n=0;
+		XtSetArg(args[n],XmNuserData,this); n++;
+		XtSetArg(args[n], XmNtopAttachment, XmATTACH_WIDGET); n++;
+		XtSetArg(args[n], XmNtopWidget, pane); n++;
+		//XtSetArg(args[n],XmNpaneMinimum,50); n++;
+		XtSetArg(args[n],XmNpaneMaximum,100); n++;
+		/* These attach the button widgets to the top and bottom of the parent form
+		XtSetArg(args[n],XmNtopAttachment,XmATTACH_FORM); n++;
+		XtSetArg(args[n],XmNbottomAttachment,XmATTACH_FORM); n++;
+		*/
+	
+		XtManageChild(pane);
+		XtPopup (rshell_beam, XtGrabNone);
     
-	TimeSeriesEnsemble *comp_tmp;
-	comp_tmp=new TimeSeriesEnsemble(beam_tse);
-    n=0;
-    /*Previous had this.  This disables callbacks for MB3
-    XtSetArg(args[n],(char *) ExmNdisplayOnly,1); n++;
-    **************************************/
-    XtSetArg(args[n],XmNpaneMinimum,100); n++;
-    XtSetArg(args[n],XmNmarginHeight,100);n++;
-    // Don't think this is really necessary or desirable
-    //XtSetArg(args[n],(char *) ExmNcleanupData, static_cast<XtPointer>(beam_tse));n++;
-
-    beam_widget=ExmCreateSeisw(pane,(char *) "Beam Plot",args,n);
-
-    XtManageChild(beam_widget);
-    /* the Seisw widget always initializes with a NULL data pointer.
-    The following is necessary to get the data to display and to
-    show pick markers */
-	//DisplayMarkerDataRec tracemarkers;
-	/*
-	tracemarkers.beam_tw=TimeWindow(10,10);
-	tracemarkers.beam_color="red";
-	tracemarkers.title="testpick";
-	tracemarkers.robust_tw=TimeWindow(8,12);
-	tracemarkers.robust_color="blue";
-	*/
-	//XtVaSetValues(beam_widget,ExmNdisplayMarkers,(XtPointer)(&(tracemarkers)),NULL);
-	
-    XtVaSetValues(beam_widget,
-		ExmNseiswEnsemble,static_cast<XtPointer>(comp_tmp),
-		ExmNseiswMetadata,&beam_display_md,
-		ExmNdisplayMarkers,(XtPointer)(&(plotboxmarkers)),NULL);
-	//display tracemarkers.
-	//XtVaSetValues(beam_widget,ExmNdisplayMarkers,(XtPointer)(&(tracemarkers)),NULL);
-	
-	n=0;
-	XtSetArg(args[n],XmNuserData,this); n++;
-	XtSetArg(args[n], XmNtopAttachment, XmATTACH_WIDGET); n++;
-	XtSetArg(args[n], XmNtopWidget, pane); n++;
-	//XtSetArg(args[n],XmNpaneMinimum,50); n++;
-	XtSetArg(args[n],XmNpaneMaximum,100); n++;
-	/* These attach the button widgets to the top and bottom of the parent form
-	XtSetArg(args[n],XmNtopAttachment,XmATTACH_FORM); n++;
-	XtSetArg(args[n],XmNbottomAttachment,XmATTACH_FORM); n++;
-	*/
-	
-	XtManageChild(pane);
-    XtPopup (rshell_beam, XtGrabNone);
+    	}catch(SeisppError& serr)
+	{
+		cerr<<"Error in TraceEditPlot::do_beam_plot():"<<endl;
+		cerr<<serr.what()<<endl;
+		exit(-1);
+	}; 
 }
 /* Show Trace Metadata for each selected trace (one at a time).
 */

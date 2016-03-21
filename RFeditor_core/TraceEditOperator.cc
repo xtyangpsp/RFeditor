@@ -1995,6 +1995,7 @@ TimeSeries TraceEditOperator::get_stack(TimeSeriesEnsemble& d,TimeWindow twin,
 				iptr->put(SEISPP::stack_weight_keyword,1.0);
 			}
 			tmp=iptr->get_double(SEISPP::stack_weight_keyword);
+			//cout<<"test 2, trace member: "<<i<<endl;
 			//tmp=iptr->get_double(SEISPP::moveout_keyword);
 			//DEBUG
 			//cerr<<"member "<<i<<", moveout= "<<tmp
@@ -2003,7 +2004,6 @@ TimeSeries TraceEditOperator::get_stack(TimeSeriesEnsemble& d,TimeWindow twin,
 			//DEBUG
 			//cout<<"evid="<<iptr->get_int(evidkey)<<", vmax = "<<vmax<<", tmp="<<tmp<<endl;
 		}
-		
 		//only if vmax has been modified by the above loop, we do the normalization.
 		if(vmax>MYZERO)
 			for(iptr=d.member.begin();iptr!=d.member.end();++iptr)
@@ -2011,6 +2011,7 @@ TimeSeries TraceEditOperator::get_stack(TimeSeriesEnsemble& d,TimeWindow twin,
 				tmp=iptr->get_double(SEISPP::stack_weight_keyword);
 				iptr->put(SEISPP::stack_weight_keyword,tmp/vmax);
 			}
+		
         /* Frozen name a problem, but label this stack so clear it
            is such */
         //TEST FOR MCC
@@ -2033,8 +2034,8 @@ TimeSeries TraceEditOperator::get_stack(TimeSeriesEnsemble& d,TimeWindow twin,
         }
         */
         return result;
-    } catch(...)
-    {//cerr<<"**ERROR in get_stack(): "<<endl;
+    } catch(SeisppError& serr)
+    {cerr<<"**ERROR in get_stack(): "<<endl;
     	//debug
     	//cerr<<"stack tw: "<<twin.start<<", "<<twin.end<<endl
     	//	<<"robust tw: "<<rtw.start<<", "<<rtw.end<<endl;

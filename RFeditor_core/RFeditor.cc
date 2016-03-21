@@ -115,14 +115,16 @@ void history_current()
 	<<" (1) blocked LowFrequencyContaminated procedure. Removed dependency on GSL library."<<endl
 	<<" (2) cleaned up lines of old debries. tested wfdisc in and out."<<endl
 	<<" (3) read metadata lists from pf is optional. they are built in now. values in pf will overwrite the built-in values."<<endl
+<<">> 03/21/2016 XT Yang"<<endl
+	<<" (1) fixed a bug in setting beam_plot metadata."<<endl
 	<<endl;
 }
 
-const string csversion("v3.7.1");
+const string csversion("v3.7");
 
 void version()
 {
-	cerr <<"< version "<<csversion<<" > 3/17/2016"<<endl;
+	cerr <<"< version "<<csversion<<" > 3/21/2016"<<endl;
 }
 void author()
 {
@@ -1136,7 +1138,8 @@ void append_plot_window_params(Metadata& md)
 		if(!md.is_attribute_set((char *)"beam_hbox")) md.put("beam_hbox",250);
 		if(!md.is_attribute_set((char *)"beam_clip_data")) md.put("beam_clip_data",false);
 		if(!md.is_attribute_set((char *)"beam_xcur")) md.put("beam_xcur",1.0);
-		if(!md.is_attribute_set((char *)"beam_xcur")) md.put("beam_xcur",1.0);
+		if(!md.is_attribute_set((char *)"beam_trace_spacing")) 
+			md.put("beam_trace_spacing",1.0);
 		if(!md.is_attribute_set((char *)"beam_trace_axis_scaling")) 
 			md.put("beam_trace_axis_scaling",(char *)"auto");
 	}catch(...) {throw;};
