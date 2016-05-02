@@ -872,10 +872,9 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
 					}	
 				}
 			}
-
 			if(apply_klrfqi)
 			{
-				min_rfqi=md.get_double("rfqi_min");
+                min_rfqi=md.get_double("rfqi_min");
 				RFQI_weights[0]=md.get_double("RFQI_weight_stackweight");
 				RFQI_weights[1]=md.get_double("RFQI_weight_refxcorcoe");
 				RFQI_weights[2]=md.get_double("RFQI_weight_successindex");
@@ -980,7 +979,7 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
         	cerr<<"ERROR in RFeditorEngine::edit(). This is for GUIoff mode only!"<<endl;
         	exit(-1);
         }
-    }catch(...){throw;};
+    }catch(SeisppError &serr){serr.what(); throw;}catch(...){throw;};
 }
 //end of RFeditorEngine
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++

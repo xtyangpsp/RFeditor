@@ -117,6 +117,8 @@ void history_current()
 	<<" (3) read metadata lists from pf is optional. they are built in now. values in pf will overwrite the built-in values."<<endl
 <<">> 03/21/2016 XT Yang"<<endl
 	<<" (1) fixed a bug in setting beam_plot metadata."<<endl
+<<">> 05/02/2016 XT Yang"<<endl
+    <<" (1) added throw details when there is an error in GUIOFF edit."<<endl
 	<<endl;
 }
 
@@ -124,7 +126,7 @@ const string csversion("v3.7");
 
 void version()
 {
-	cerr <<"< version "<<csversion<<" > 3/21/2016"<<endl;
+	cerr <<"< version "<<csversion<<" > 5/2/2016"<<endl;
 }
 void author()
 {
