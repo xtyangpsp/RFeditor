@@ -13,8 +13,8 @@ include $(ANTELOPEMAKE)
 include $(ANTELOPEMAKELOCAL)
 
 CXXFLAGS += -I$(XMOTIFINCLUDE)
-CXXFLAGS += -I$(BOOSTINCLUDE)
-
+CXXFLAGS += -I$(BOOSTINCLUDE) #-static -v
+#CXX=g++-4
 #LDLIBS += -L$(BOOSTLIB)
 
 # for valgrind only

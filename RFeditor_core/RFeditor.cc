@@ -117,8 +117,9 @@ void history_current()
 	<<" (3) read metadata lists from pf is optional. they are built in now. values in pf will overwrite the built-in values."<<endl
 <<">> 03/21/2016 XT Yang"<<endl
 	<<" (1) fixed a bug in setting beam_plot metadata."<<endl
-<<">> 05/02/2016 XT Yang"<<endl
+<<">> 05/02/2016 - 5/4/2016 XT Yang"<<endl
     <<" (1) added throw details when there is an error in GUIOFF edit."<<endl
+    <<" (2) fixed a bug in saving to wfprocess table."<<endl
 	<<endl;
 }
 
@@ -126,7 +127,7 @@ const string csversion("v3.7");
 
 void version()
 {
-	cerr <<"< version "<<csversion<<" > 5/2/2016"<<endl;
+	cerr <<"< version "<<csversion<<" > 5/4/2016"<<endl;
 }
 void author()
 {
@@ -808,10 +809,16 @@ int save_to_db(ThreeComponentEnsemble& tce,MetadataList& mdl,
 		{
 			try {
 				d->put("dir",outdir);
+				//debug
+				//cout<<"db: save to dir: "<<outdir<<endl;
+				//cout<<"db: dir in db: "<<d->get_string("dir")<<endl;
 				if(outtable=="wfprocess")
 				{
 					outdfile=outdfile_base+"_"+d->get_string("sta")+".3C";
 					d->put("dfile",outdfile);
+					//debug
+					//cout<<"db: save to dfile: "<<outdfile<<endl;
+					//cout<<"db: outdfile in db: "<<d->get_string("dfile")<<endl;
 					//save db.
 					long rnum;
 					if(save_metadata_only)
@@ -1296,6 +1303,7 @@ int main(int argc, char **argv)
         else
             usage();
     }
+    
     //Review Mode must be off in GUIoff mode.
     if(review_mode && GUIoff && !get_FA)
     {
@@ -1468,7 +1476,7 @@ int main(int argc, char **argv)
         	}
         	if(control.is_attribute_set(MDL_WFPROCESSOUT))
 			{
-				mdlout_wfp=pfget_mdlist(pf,control.get_string(MDL_WFPROCESSOUT));
+				mdlout=pfget_mdlist(pf,control.get_string(MDL_WFPROCESSOUT));
 			}
 			else
         		mdlout=generate_mdlist("wfprocessout");
@@ -1477,7 +1485,7 @@ int main(int argc, char **argv)
         	{
         		if(control.is_attribute_set(MDL_WFDISCOUT))
 				{
-					mdlout=pfget_mdlist(pf,control.get_string(MDL_WFDISCOUT));
+					mdlout_wfd=pfget_mdlist(pf,control.get_string(MDL_WFDISCOUT));
 				}
 				else
         			mdlout_wfd=generate_mdlist("wfdiscout");
@@ -1597,7 +1605,11 @@ int main(int argc, char **argv)
         {
         	cout << "Outputing edited db to database [ "<<dbout_name<<" ]."<<endl;
 			logfile << "Output to [ " << dbout_name <<" ]."<<endl;
+			//debug
+    		cout<<"Will save data to dir [ "<<outdir<<" ]"<<endl;
+    		logfile<<"Will save data to dir [ "<<outdir<<" ]"<<endl;
 		}
+		
 		
 				/****************************************************************
 				*****************************************************************
