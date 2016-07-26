@@ -345,7 +345,7 @@ The basic algorithm is:
 	end foreach
 */
 //Copied from readwrite.cc of SEISPP libs by Xiaotao Yang.
-void save_metadata_for_object(Metadata& md,
+void save_metadata_for_object2(Metadata& md,
 	Dbptr db,
 		string table,
 			MetadataList& mdl, 
@@ -356,7 +356,7 @@ void save_metadata_for_object(Metadata& md,
 	map<string,AttributeProperties>::iterator ami,amie=am.attributes.end();
 	map<string,AttributeProperties> aliasmap;
 	string cval;
-	const string base_message("dbsave->save_metadata_for_object:  ");
+	const string base_message("dbsave->save_metadata_for_object2:  ");
 //DEBUG
 	for(mdli=mdl.begin();mdli!=mdl.end();++mdli)
 	{
@@ -502,7 +502,7 @@ long dbsave_metadata(TimeSeries& ts,
 	if(recnumber==dbINVALID) throw SeisppError(string("dbsave_metadata:  dbaddnull failed on table "+table));
 	db.record=recnumber;
 	try {
-		save_metadata_for_object(dynamic_cast<Metadata&>(ts),
+		save_metadata_for_object2(dynamic_cast<Metadata&>(ts),
 			db,table,mdl,am);
 	} catch (SeisppError& serr)
 	{
@@ -550,7 +550,7 @@ long dbsave_metadata(ThreeComponentSeismogram& tcs,
 		else
 			sdtype=string("3c");
 		tcs.put("datatype",sdtype);
-		save_metadata_for_object(dynamic_cast<Metadata&>(tcs),
+		save_metadata_for_object2(dynamic_cast<Metadata&>(tcs),
 			db,table,mdl,am);
 		// Even if they were written in the above loop the contents 
 		// of the object just override the metadata versions.  
