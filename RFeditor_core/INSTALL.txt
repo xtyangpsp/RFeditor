@@ -8,7 +8,7 @@ For other linux-based systems, it should be working but please report any issues
 ****************************************
 <<LIBRARY DEPENDENCY>>
 
-This program operates on an Antelope Datascope database (version 5.5 and later). Please make sure that Antelope is working properly before installing this program.
+This program operates on an Antelope Datascope database (version 5.5 and later). Please make sure that Antelope is working properly before installing this program. Go to: http://www.antelopeusersgroup.org to install contrib following the procedures there, if it is not installed along with the Antelope package. 
 
 Update contrib:
 Under your $ANTELOPE/contrib, type in terminal: git pull. This will update your contrib package. After it finishes, recompile the updated programs.
@@ -49,3 +49,8 @@ This deposit tredit and decon tables to $ANTELOPE/contrib/data/css3.0.ext/, depo
 **Make sure you have the permission to write, read, and execute programs.
 
 If you the above compiling went through, congratulations, RFeditor is available to you.
+
+
+*****************************************
+<<REFERENCE>>
+Reference for the method: Yang, X. T., G. L. Pavlis, and Y. Wang (2016), A quality control method for teleseismic P-wave receiver functions, Bull. Seismol. Soc. Am., 106(5), 1948–1962, doi:10.1785/0120150347.
