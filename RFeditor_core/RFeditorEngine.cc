@@ -874,10 +874,13 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
 			}
 			if(apply_klrfqi)
 			{
+				try{
                 min_rfqi=md.get_double("rfqi_min");
 				RFQI_weights[0]=md.get_double("RFQI_weight_stackweight");
 				RFQI_weights[1]=md.get_double("RFQI_weight_refxcorcoe");
 				RFQI_weights[2]=md.get_double("RFQI_weight_successindex");
+				}catch(SeisppError& serr)
+						{cerr<<"**Error when getting RFQI parameters!"<<endl; serr.what();exit(-1);}
 				if(use_decon_in_editing)
 				{
 					//compute decon success index.
@@ -892,9 +895,7 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
 						<<"   weight is set to 0.0. Other weights are scaled to have sum of 1.0."<<endl;
 				}
 				//compute stackweight.
-				//DEBUG
-				//cout<<"Excluding false traces ..."<<endl;
-				
+				//DEBUG		
 				//iteratively apply klrfqi
 				long nkill_rfqi(tse.member.size());// initialize nkill as the ensemble size.
 				int itn(1);
@@ -957,7 +958,6 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& tse,Metadata& md)
 					}
 				}
 			}
-			
 			nkilled=rkills0.size();
 
 			/*

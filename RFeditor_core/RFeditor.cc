@@ -120,14 +120,16 @@ void history_current()
 <<">> 05/02/2016 - 5/4/2016 XT Yang"<<endl
     <<" (1) added throw details when there is an error in GUIOFF edit."<<endl
     <<" (2) fixed a bug in saving to wfprocess table."<<endl
+<<">> 10/16/2017 XT Yang"<<endl
+	<<" (1) added catch errors when getting RFQI parameters in RFeditorEngine.cc."<<endl
 	<<endl;
 }
 
-const string csversion("v3.7");
+const string csversion("v3.7.1");
 
 void version()
 {
-	cerr <<"< version "<<csversion<<" > 5/4/2016"<<endl;
+	cerr <<"< version "<<csversion<<" > 10/16/2017"<<endl;
 }
 void author()
 {
