@@ -122,14 +122,16 @@ void history_current()
     <<" (2) fixed a bug in saving to wfprocess table."<<endl
 <<">> 10/16/2017 XT Yang"<<endl
 	<<" (1) added catch errors when getting RFQI parameters in RFeditorEngine.cc."<<endl
+<<">> 7/14/2018 XT Yang"<<endl
+	<<" (1) added installation instruction and other useful information in the user guide."<<endl
 	<<endl;
 }
 
-const string csversion("v3.7.1");
+const string csversion("v3.7.2");
 
 void version()
 {
-	cerr <<"< version "<<csversion<<" > 10/16/2017"<<endl;
+	cerr <<"< version "<<csversion<<" > 7/14/2018"<<endl;
 }
 void author()
 {
@@ -2208,7 +2210,7 @@ int main(int argc, char **argv)
 					//TimeWindow twin(radial.member[0].t0,radial.member[0].endtime());
                     TimeWindow twin=teo.find_common_timewindow(tse_edit);
                     //debug common window
-                    //cout<<"debug: twin.start="<<twin.start<<", end="<<twin.end<<endl;
+                    cout<<"debug: twin.start="<<twin.start<<", end="<<twin.end<<endl;
                     //teo.convolve_ensemble(wavelet,radial,true,&twin);
                     if(SEISPP_verbose) 
 						cout<<"Convolving "<<edit_on_channel<<" ensemble with wavelet: "<<wavelet_type<<" ..."<<endl;

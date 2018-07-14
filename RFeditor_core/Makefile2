@@ -6,7 +6,7 @@ DATA=tredit decon
 SUBDIR=/contrib
 
 ldlibs=-lseispp -lbrttutil $(TRLIBS) $(DBLIBS) -L$(XMOTIFLIB) \
-       -L$(BOOSTLIB) -lboost_thread -lboost_system -lseisw \
+       -L$(BOOSTLIB) -lboost_thread -lboost_system -Llibseisw -lseisw \
        -lXm -lXt -lperf -lgclgrid $(X11LIBS)
 ANTELOPEMAKELOCAL = $(ANTELOPE)/contrib/include/antelopemake.local
 include $(ANTELOPEMAKE)  	
