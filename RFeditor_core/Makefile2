@@ -7,7 +7,7 @@ SUBDIR=/contrib
 
 ldlibs=-lseispp -lbrttutil $(TRLIBS) $(DBLIBS) -L$(XMOTIFLIB) \
        -L$(BOOSTLIB) -lboost_thread -lboost_system -Llibseisw -lseisw \
-       -lXm -lXt -lperf -lgclgrid $(X11LIBS)
+       -lXm -lXt -lperf $(X11LIBS)
 ANTELOPEMAKELOCAL = $(ANTELOPE)/contrib/include/antelopemake.local
 include $(ANTELOPEMAKE)  	
 include $(ANTELOPEMAKELOCAL)
@@ -19,7 +19,7 @@ CXXFLAGS += -I$(BOOSTINCLUDE) #-static -v
 
 # for valgrind only
 CXXFLAGS += -g
-OBJS=RFeditor.o RFeditorEngine.o TraceEditOperator.o SeismicPlot.o TimeWindowPicker.o
+OBJS=RFeditor.o RFeditorEngine.o TraceEditOperator.o SeismicPlot.o TimeWindowPicker.o dmatrix.o
 $(BIN) : $(OBJS)
 	$(RM) $@
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)

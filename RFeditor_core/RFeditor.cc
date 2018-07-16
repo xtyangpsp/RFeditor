@@ -3,6 +3,7 @@
 #include <vector>
 #include <list>
 #include <algorithm>
+#include "dmatrix.h"
 #include "stack.h"
 #include "seispp.h"
 #include "SeisppKeywords.h"
