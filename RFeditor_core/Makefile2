@@ -2,7 +2,7 @@ BIN=RFeditor
 #MAN1=RFeditor.1
 PF=RFeditor.pf
 DATADIR=schemas/css3.0.ext
-DATA=tredit decon
+DATA=tredit decon wfprocess
 SUBDIR=/contrib
 
 ldlibs=-lseispp -lbrttutil $(TRLIBS) $(DBLIBS) -L$(XMOTIFLIB) \
