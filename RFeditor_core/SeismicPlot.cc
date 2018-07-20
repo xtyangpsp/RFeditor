@@ -155,12 +155,32 @@ void SeismicPlot::initialize_widgets(Metadata& md)
         menu_bar=XmCreateMenuBar(main_w,(char *)"menuBar",NULL,0);
         XtVaSetValues (menu_bar, XmNtopAttachment,  XmATTACH_FORM, XmNleftAttachment, 
         				XmATTACH_FORM,XmNrightAttachment, XmATTACH_FORM, NULL);
+        
+        
+        MenuItem File_save_trace_submenu[]={
+			{(char *)"Pick Trace",
+			&xmPushButtonGadgetClass,'T', (char *)"Ctrl<Key>T",(char *)"Ctrl+T",
+				save_timeseries_to_file_callback,this,NULL,(MenuItem *)NULL},
+			{(char *)"All Traces",
+			&xmPushButtonGadgetClass,(char)NULL,
+			(char *)NULL,(char *)NULL,
+			NULL,
+			this,NULL,(MenuItem *)NULL},
+			{(char *)"Robust Stack",
+			&xmPushButtonGadgetClass,(char)NULL,
+			(char *)NULL,(char *)NULL,
+			NULL,
+			this,NULL,(MenuItem *)NULL},
+			{(char *)"Average Stack",
+			&xmPushButtonGadgetClass,(char)NULL,
+			(char *)NULL,(char *)NULL,
+			NULL,
+			this,NULL,(MenuItem *)NULL},
+			{NULL,NULL,(char)NULL,(char *)NULL,(char *)NULL,NULL,NULL,NULL,(MenuItem *)NULL}
+		};
         MenuItem file_menu[]={
-            {(char *) "<Save Picked-Trace To File >",&xmPushButtonGadgetClass,'T', 
-            //Modified by Xiaotao Yang 1/16/2015
-            //(char *) "Exit Event Loop",&xmPushButtonGadgetClass,'x',
-			(char *)"Ctrl<Key>T",(char *)"Ctrl+T",
-			save_timeseries_to_file_callback,this,NULL,(MenuItem *)NULL},
+            {(char *) "<Save Trace To File >",&xmPushButtonGadgetClass,(char)NULL,
+        	(char *)NULL,(char *)NULL,NULL,this,NULL,File_save_trace_submenu},
 			{(char *) "Save & Go Next",&xmPushButtonGadgetClass,'G', 
             //Modified by Xiaotao Yang 1/16/2015
             //(char *) "Exit Event Loop",&xmPushButtonGadgetClass,'x',

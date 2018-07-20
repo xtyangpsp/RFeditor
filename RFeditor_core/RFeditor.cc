@@ -125,14 +125,16 @@ void history_current()
 	<<" (1) added catch errors when getting RFQI parameters in RFeditorEngine.cc."<<endl
 <<">> 7/14/2018 XT Yang"<<endl
 	<<" (1) added installation instruction and other useful information in the user guide."<<endl
+<<">> 7/19/2018 XT Yang"<<endl
+	<<" (1) temporarily fixed the bug that current compiler under antelope 5.8 cannot find now(). The two lines were removed."<<endl
 	<<endl;
 }
 
-const string csversion("v3.7.2");
+const string csversion("v3.7.3");
 
 void version()
 {
-	cerr <<"< version "<<csversion<<" > 7/14/2018"<<endl;
+	cerr <<"< version "<<csversion<<" > 7/19/2018"<<endl;
 }
 void author()
 {
@@ -1603,8 +1605,7 @@ int main(int argc, char **argv)
 			logfile << "RFeditor: review mode is turned on! All edits will be dropped!"<<endl;
 		}
         cout << "Starting RFeditor on database [ "<<dbin_name<<" ]."<<endl;
-        logfile << "RFeditor run on [ " << dbin_name << " ] at time "
-            << strtime(now()) <<endl;
+        logfile << "RFeditor run on [ " << dbin_name << " ]" <<endl;
         
         if(!review_mode)
         {
@@ -2611,8 +2612,7 @@ int main(int argc, char **argv)
         tse_edit.member.clear();
         if(get_FA) fclose(fh_fa);
         if(SEISPP_verbose) cout<<"RFeditor finished."<<endl;
-        logfile << "RFeditor finished on [ " << dbin_name << " ] at time "
-            << strtime(now()) <<endl;
+        logfile << "RFeditor finished on [ " << dbin_name << " ] "  <<endl;
         logfile.close();
         //delete rfe;
     }catch(SeisppError& serr)
