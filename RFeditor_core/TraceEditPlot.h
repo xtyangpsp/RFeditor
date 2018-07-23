@@ -80,6 +80,9 @@ public:
     void turn_on_single_trace_mode();
     void turn_on_cutoff_mode();
 	void add_select_trace_callback();
+	void save_stack_trace_to_file(StackType st);
+	void save_all_traces_to_file();
+	void choose_save_metadata_version();
 	void edit_enable_public();
 	void edit_disable_public();
 	void restore_ensemble();
@@ -110,6 +113,8 @@ public:
     void customize_kill_low_ref_correlation();
     void apply_kill_low_RFQualityIndex();
     //sorting procedures.
+    //Sort by station-to-event azimuth (or event back azimuth) extracted from trace metadata
+    void sort_by_event_BAZ(); 
     void sort_by_magnitude();
     void sort_by_ref_trace();
     void sort_by_xcor_to_stacktrace();
@@ -121,7 +126,7 @@ public:
     void print_trace_order();
     void reverse_trace_order();
     void show_trace_metadata();
-    void get_stack_trace();
+    void get_stack_trace(StackType st);
     void do_beam_plot();
     void review_killed_traces();
     void restore_killed_traces();
@@ -141,8 +146,10 @@ public:
     //bool robust_window_set;
 	bool allow_edit;
 	bool use_decon_in_editing;
+	bool use_arrival_data;
 	bool use_netmag_table;
 	bool killed_review_mode;
+	int save_metadata_version=2;
 	//
 	string decon_kill_parname;
 	string timewindow_typename;
@@ -162,6 +169,7 @@ public:
 	
 private:
     Metadata metadata; //used to save metadata used in ploting the stack trace.
+
     DisplayMarkerDataRec tracemarkers;
     string sort_method;
     double RF_quality_index_weights[3];
@@ -196,6 +204,7 @@ private:
        constructors. */
     void edit_enable();
     void edit_disable();
+    void build_file_menu();
     void build_edit_menu();
     void build_view_menu();
     void build_sort_menu();

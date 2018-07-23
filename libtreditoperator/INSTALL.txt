@@ -1,0 +1,63 @@
+********************
+*** NOTE ***********
+***      ***********
+********************
+********************
+Updated on July 22, 2018
+
+This file describes how to compile libtreditoperator library.
+
+In this file, we use symbol ‘$’ to denote terminal input.
+****************************************
+1. INTRODUCTION
+1.1 Download
+	The package is available at: https://github.com/xtyangpsp/RFeditor. Assumming you have downloaded the package and saved it to: /Users/myhome/SOFT/src/RFeditor, this path is referred to as RFEROOT in this user guide. Under this directory, there are four subfolders:
+	This directory contains the lib needed by RFeditor editing procedures. However, the library files are currently embedded in RFeditor core codes. Thus, compiling RFeditor does not require the compiling of this library. This library can be used by other utilities or extensional programs.
+
+1.2 Citation
+	Reference for the method: Yang, X. T., G. L. Pavlis, and Y. Wang (2016), A quality control method for teleseismic P-wave receiver functions, Bull. Seismol. Soc. Am., 106(5), 1948–1962, doi:10.1785/0120150347.
+
+1.3 Support
+	Support is provided through GitHub platform. You can create an issue or ask questions at: https://github.com/xtyangpsp/RFeditor. Or you can send emails regarding questions to: xtyang@indiana.edu.
+
+2. INSTALLATION
+	Writing permission: please make sure $ANTELOPE directory is not owned by root. Chage the ownership is needed:
+	$ chown -R yourusername $ANTELOPE
+	This program operates based on an Antelope Datascope database (version 5.5 and later). Go to: http://www.antelopeusersgroup.org to install contrib following the procedures there, if it is not installed along with the Antelope package. Please make sure that Antelope is working properly before installing this program. If you downloaded and installed the contrib package through git repository, you can update it, under your $ANTELOPE, by typing in terminal:
+	$ git clone https://github.com/antelopeusersgroup/antelope_contrib.git src
+	This will download the latest contrib package. After it finishes, compile the programs. Please follow README.md under $ANTELOPE/src to compile contrib package. 
+	
+2.1 Operation Systems
+	This program has been fully tested under Mac OSX Mountain Lion (10.8), Mavericks (10.9), Yosemite (10.10), Sierra (10.12), High Sierra (10.13). Newer Mac OS should be fine but without heavy tests. For other linux-based systems, it should be working but please report any issues at: https://github.com/xtyangpsp/RFeditor.
+2.2 Library dependency
+	The following libraries are required in order to compile RFeditor (current version 3.x). You may need to install these libraries by the order as shown here:
+(1) boost (http://www.boost.org):
+	This is a C++ library. On Mac OSX, you can install it from fink. From our experience, please install the version tagged as “nophython”.
+	$fink list boost
+	$fink install boostpackagename
+
+<<< Configure Antelope localmake >>
+	After successfully installed boost and xmotif libraries, you have to enable boost and xmotif for Antelope. This can be done by running in any terminal: 
+	$localmake_config
+	This will lead you to the interface where you can enable BOOST and XMOTIF capabilities. You will need to type the paths for LIB and INCLUDE for BOOST and then: “File->Save and Quit” to save these configurations. Change if needed.
+
+(2) libseispp ($ANTELOPE/src/lib/seismic/libseispp)
+	This library is released along with the Antelope contrib package. Once you successfully compiled contrib software, libseispp should be already available. If not, cd to this directory and type:
+	$make Include
+	$make
+	Note: under 5.8, seems now() function cannot be found. Commented out Makefile under libseispp for ArrivalUpdater.o in OBJS.
+2.3 Install 
+	Once you have all of the required libraries installed and properly configured, cd to $RFEROOT/libtreditoperator. 
+	NOTE: In antelope 5.8 and later, antelope programs use TOOLCHAIN macro to define the compiler libraries. For now, RFeditor doesn't work under the antelope toolchain for OSX. Fix this issue by setting environment variable in ~/.bash_profile (or similar other files):
+	export TOOLCHAIN=native
+	
+	Then:
+	$source ~/.bash_profile
+	And under $RFEROOT/libtreditoperator, run:
+	$make
+	If the above compiling procedure is successful, run:
+	$make install
+
+<<< Trouble Shooting >>
+	If you get errors complaining that some libraries are not found, you may need to find the library and copy it (or create a symbolic link) to: $ANTELOPE/lib. For example, lseispp means library file libseispp.a.
+

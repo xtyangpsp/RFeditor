@@ -7,24 +7,73 @@ function [trdata,trhdr]=readrf(ftrace, mdversion, nheaderlines)
 %		[trdata,trhdr]=readrf(ftrace, mdversion)
 %       [trdata,trhdr]=readrf(ftrace, mdversion, nheaderlines)
 %Modified on: 12/31/2015
+%Xiaotao Yang on July 22, 2018
+%   1. Added version=3; 
+%   2. Added examples for all three versions
 %
-%trace header lines
-% station            : CCM
-% start_time         :  9/09/2011   2:43:45.970
-% evid               :        117
-% samples            :       6001
-% dt                 :   0.025000
-% t0                 :   0.000000
-% stack_weight       :  0.0111
-% RT_xcorcoe         :  0.4915
-% RFQualityIndex     :  0.3438
-% DeconSuccessIndex  :  0.4995
-% niteration         :         81
-% nspike             :         57
-% epsilon            :   29.01390
-% peakamp            :    0.24970
-% averamp            :    0.00692
-% rawsnr             :    0.60000
+%trace header lines, examples
+%{
+Choose metadata version code for saved trace from below (1, 2, 3):
+  1  - Example below (basic version)  
+     %Metadata version 1
+     station            : BLO
+     start_time         :  4/01/2014  23:56:30.025
+     evid               :       1169
+     samples            :       6001
+     dt                 :   0.025000
+     t0                 : -29.987570
+     stack_weight       : -9999.0000
+     RT_xcorcoe         : -9999.0000
+     RFQualityIndex     : -9999.0000
+     DeconSuccessIndex  :  0.4620
+     niteration         :          3
+     nspike             :          2
+     epsilon            :   30.69890
+     peakamp            :    0.40356
+     averamp            :    0.00535
+     rawsnr             :    2.50000
+  2  - Example below (basic+magnitude)
+     %Metadata version 2
+     station            : BLO
+     start_time         :  4/01/2014  23:56:30.025
+     evid               :       1169
+     magnitude          : -9999.00
+     magtype            : -
+     samples            :       6001
+     dt                 :   0.025000
+     t0                 : -29.987570
+     stack_weight       : -9999.0000
+     RT_xcorcoe         : -9999.0000
+     RFQualityIndex     : -9999.0000
+     DeconSuccessIndex  :  0.4620
+     niteration         :          3
+     nspike             :          2
+     epsilon            :   30.69890
+     peakamp            :    0.40356
+     averamp            :    0.00535
+     rawsnr             :    2.50000
+  3  - Example below (basic+magnitude+back_azimuth) 
+     %Metadata version 3
+     station            : BLO
+     start_time         :  4/01/2014  23:56:30.025
+     evid               :       1169
+     magnitude          : -9999.00
+     magtype            : -
+     back_azimuth       : 172.5
+     samples            :       6001
+     dt                 :   0.025000
+     t0                 : -29.987570
+     stack_weight       : -9999.0000
+     RT_xcorcoe         : -9999.0000
+     RFQualityIndex     : -9999.0000
+     DeconSuccessIndex  :  0.4620
+     niteration         :          3
+     nspike             :          2
+     epsilon            :   30.69890
+     peakamp            :    0.40356
+     averamp            :    0.00535
+     rawsnr             :    2.50000
+%}
 
 %to make the program compatible with earlier usage, default mdversion is 1.
 if(nargin==1) 
@@ -162,6 +211,99 @@ elseif(mdversion==2)
     k=strfind(temp,':');
     trhdr.magtype=sscanf(temp((k+1):length(temp)),'%s');
     
+    temp=fgetl(fid);
+    k=strfind(temp,':');
+    trhdr.nsamp=sscanf(temp((k+1):length(temp)),'%d');
+    
+    temp=fgetl(fid);
+    k=strfind(temp,':');
+    trhdr.dt=sscanf(temp((k+1):length(temp)),'%g');
+    
+    temp=fgetl(fid);
+    k=strfind(temp,':');
+    trhdr.t0=sscanf(temp((k+1):length(temp)),'%g');
+    
+    temp=fgetl(fid);
+    k=strfind(temp,':');
+    trhdr.stackweight=sscanf(temp((k+1):length(temp)),'%g');
+    
+    temp=fgetl(fid);
+    k=strfind(temp,':');
+    trhdr.rt_xcorcoe=sscanf(temp((k+1):length(temp)),'%g');
+    
+    temp=fgetl(fid);
+    k=strfind(temp,':');
+    trhdr.rfqi=sscanf(temp((k+1):length(temp)),'%g');
+    
+    temp=fgetl(fid);
+    k=strfind(temp,':');
+    trhdr.dsi=sscanf(temp((k+1):length(temp)),'%g');
+    
+    temp=fgetl(fid);
+    k=strfind(temp,':');
+    trhdr.niteration=sscanf(temp((k+1):length(temp)),'%d');
+    
+    temp=fgetl(fid);
+    k=strfind(temp,':');
+    trhdr.nspike=sscanf(temp((k+1):length(temp)),'%d');
+    
+    temp=fgetl(fid);
+    k=strfind(temp,':');
+    trhdr.epsilon=sscanf(temp((k+1):length(temp)),'%g');
+    
+    temp=fgetl(fid);
+    k=strfind(temp,':');
+    trhdr.peakamp=sscanf(temp((k+1):length(temp)),'%g');
+    
+    temp=fgetl(fid);
+    k=strfind(temp,':');
+    trhdr.averamp=sscanf(temp((k+1):length(temp)),'%g');
+    
+    temp=fgetl(fid);
+    k=strfind(temp,':');
+    trhdr.rawsnr=sscanf(temp((k+1):length(temp)),'%g');
+elseif(mdversion==3)
+	trhdr_default=struct('sta','-',...
+             'UTCstart','-',...
+             'evid',-9999,...
+             'magnitude',-9999.9,...
+             'magtype','-',...
+             'back_azimuth',-9999.9,...
+             'nsamp',-9999,...
+             'dt',-9999.9,...
+             't0',-9999.9,...
+             'stackweight',-9999.9,...
+             'rt_xcorcoe',-9999.9,...
+             'rfqi',-9999.9,...
+             'dsi',-9999.9,...
+             'niteration',-9999,...
+             'nspike',-9999,...
+             'epsilon',-9999.9,...
+             'peakamp',-9999.9,...
+             'averamp',-9999.9,...
+             'rawsnr',-9999.9);    %trace header  
+
+	trhdr=trhdr_default;
+    for k=1:nheaderlines
+        temp=fgetl(fid);
+    end
+    temp=fgetl(fid);
+    k=strfind(temp,':');
+    trhdr.sta=sscanf(temp((k+1):length(temp)),'%s');
+    temp=fgetl(fid);
+    k=strfind(temp,':');
+    trhdr.UTCstart=sscanf(temp((k+1):length(temp)),'%s');
+    temp=fgetl(fid);
+    k=strfind(temp,':');
+    trhdr.evid=sscanf(temp((k+1):length(temp)),'%d');
+    temp=fgetl(fid);
+    k=strfind(temp,':');
+    trhdr.magnitude=sscanf(temp((k+1):length(temp)),'%g');
+    temp=fgetl(fid);
+    k=strfind(temp,':');
+    trhdr.magtype=sscanf(temp((k+1):length(temp)),'%s');
+    k=strfind(temp,':');
+    trhdr.back_azimuth=sscanf(temp((k+1):length(temp)),'%g');
     temp=fgetl(fid);
     k=strfind(temp,':');
     trhdr.nsamp=sscanf(temp((k+1):length(temp)),'%d');

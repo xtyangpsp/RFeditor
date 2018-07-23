@@ -127,14 +127,18 @@ void history_current()
 	<<" (1) added installation instruction and other useful information in the user guide."<<endl
 <<">> 7/19/2018 XT Yang"<<endl
 	<<" (1) temporarily fixed the bug that current compiler under antelope 5.8 cannot find now(). The two lines were removed."<<endl
+<<">> 7/22/2018 XT Yang"<<endl
+	<<" (1) Moved File menu building function to TraceEditPlot"<<endl
+	<<" (2) Added options to save traces of multiple types: Robust stack, simple stack, all traces."<<endl
+	<<" (3) Added trace metadata version=3 to save back_azimuth."<<endl
 	<<endl;
 }
 
-const string csversion("v3.7.3");
+const string csversion("v3.7.4");
 
 void version()
 {
-	cerr <<"< version "<<csversion<<" > 7/19/2018"<<endl;
+	cerr <<"< version "<<csversion<<" > 7/22/2018"<<endl;
 }
 void author()
 {
@@ -1112,7 +1116,8 @@ void append_plot_window_params(Metadata& md)
 		if(!md.is_attribute_set((char *)"grid1")) md.put("grid1",1);
 		if(!md.is_attribute_set((char *)"grid2")) md.put("grid2",1);
 		if(!md.is_attribute_set((char *)"gridcolor")) md.put("gridcolor",(char *)"blue");
-		if(!md.is_attribute_set((char *)"hbox")) md.put("hbox",5000);
+		if(!md.is_attribute_set((char *)"hbox")) md.put("hbox",850);
+		if(!md.is_attribute_set((char *)"wbox")) md.put("wbox",900);
 		if(!md.is_attribute_set((char *)"interpolate")) md.put("interpolate",true);
 		if(!md.is_attribute_set((char *)"label1")) md.put("label1",(char *)"time");
 		if(!md.is_attribute_set((char *)"label2")) md.put("label2",(char *)"index");
@@ -1142,7 +1147,6 @@ void append_plot_window_params(Metadata& md)
 		if(!md.is_attribute_set((char *)"use_variable_trace_spacing")) 
 			md.put("use_variable_trace_spacing",false);
 		if(!md.is_attribute_set((char *)"verbose")) md.put("verbose",true);
-		if(!md.is_attribute_set((char *)"wbox")) md.put("wbox",950);
 		if(!md.is_attribute_set((char *)"windowtitle")) md.put("windowtitle",(char *)"RFeditor");
 		if(!md.is_attribute_set((char *)"x1beg")) md.put("x1beg",0.0);
 		if(!md.is_attribute_set((char *)"x1end")) md.put("x1end",120.0);
@@ -1410,6 +1414,7 @@ int main(int argc, char **argv)
         	    <<" arrival, assoc, event, origin, netmag tables are all available."<<endl;
         	use_arrival_data=true;
         }
+        trace_edit_params.put("use_arrival_data",use_arrival_data);
         /*
         //meaningless to read in this attribute.
         bool ThreeComponentMode=control.get_bool("ThreeComponentMode");
@@ -2212,7 +2217,7 @@ int main(int argc, char **argv)
 					//TimeWindow twin(radial.member[0].t0,radial.member[0].endtime());
                     TimeWindow twin=teo.find_common_timewindow(tse_edit);
                     //debug common window
-                    cout<<"debug: twin.start="<<twin.start<<", end="<<twin.end<<endl;
+                    cout<<"twin.start="<<twin.start<<", end="<<twin.end<<endl;
                     //teo.convolve_ensemble(wavelet,radial,true,&twin);
                     if(SEISPP_verbose) 
 						cout<<"Convolving "<<edit_on_channel<<" ensemble with wavelet: "<<wavelet_type<<" ..."<<endl;

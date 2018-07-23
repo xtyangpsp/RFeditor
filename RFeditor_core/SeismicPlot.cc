@@ -110,32 +110,7 @@ Widget BuildMenu (Widget parent, int menu_type, char *menu_title, char menu_mnem
 
         return (menu_type == XmMENU_PULLDOWN) ? cascade : menu ;
 }
-//save selected trace to file as timeseries
-void save_timeseries_to_file_callback(Widget w, XtPointer client_data, XtPointer userdata)
-{
-	TraceEditPlot *edit_plot_handle=reinterpret_cast<TraceEditPlot *>(client_data);  
-	edit_plot_handle->select_trace_typename="SAVE_TIMESERIES_TO_FILE";
-	edit_plot_handle->add_select_trace_callback();
-}
-void continue_callback(Widget w, XtPointer client_data, XtPointer call_data)
-{
-    TraceEditPlot *edit_plot_handle=reinterpret_cast<TraceEditPlot *>(client_data);  
-	edit_plot_handle->report_kills();   //report kills when saving and quiting the display.
-	if(edit_plot_handle->killed_review_mode) 
-		edit_plot_handle->exit_review_killed_traces();
-	edit_plot_handle->reset_local_variables();
-    SeismicPlot *plot_handle=reinterpret_cast<SeismicPlot *>(client_data);
-    for(int i=0; i<3; ++i) plot_handle->original_ensemble[i].member.clear();
-    plot_handle->ExitDisplay();
-}
-//cleanly quit program. Xiaotao Yang 1/201516/
-void quit_without_save(Widget w, XtPointer client_data, XtPointer call_data)
-{
-	SeismicPlot *plot_handle=reinterpret_cast<SeismicPlot *>(client_data);
-    plot_handle->~SeismicPlot();
-    cerr<<"Quiting program..."<<endl;
-	exit(-1);
-}
+
 /* This is a private method used by both constructors.  It provides
    a convenient way to standardize this without requiring a copy
    operation which would be deadly here. */
@@ -157,44 +132,6 @@ void SeismicPlot::initialize_widgets(Metadata& md)
         				XmATTACH_FORM,XmNrightAttachment, XmATTACH_FORM, NULL);
         
         
-        MenuItem File_save_trace_submenu[]={
-			{(char *)"Pick Trace",
-			&xmPushButtonGadgetClass,'T', (char *)"Ctrl<Key>T",(char *)"Ctrl+T",
-				save_timeseries_to_file_callback,this,NULL,(MenuItem *)NULL},
-			{(char *)"All Traces",
-			&xmPushButtonGadgetClass,(char)NULL,
-			(char *)NULL,(char *)NULL,
-			NULL,
-			this,NULL,(MenuItem *)NULL},
-			{(char *)"Robust Stack",
-			&xmPushButtonGadgetClass,(char)NULL,
-			(char *)NULL,(char *)NULL,
-			NULL,
-			this,NULL,(MenuItem *)NULL},
-			{(char *)"Average Stack",
-			&xmPushButtonGadgetClass,(char)NULL,
-			(char *)NULL,(char *)NULL,
-			NULL,
-			this,NULL,(MenuItem *)NULL},
-			{NULL,NULL,(char)NULL,(char *)NULL,(char *)NULL,NULL,NULL,NULL,(MenuItem *)NULL}
-		};
-        MenuItem file_menu[]={
-            {(char *) "<Save Trace To File >",&xmPushButtonGadgetClass,(char)NULL,
-        	(char *)NULL,(char *)NULL,NULL,this,NULL,File_save_trace_submenu},
-			{(char *) "Save & Go Next",&xmPushButtonGadgetClass,'G', 
-            //Modified by Xiaotao Yang 1/16/2015
-            //(char *) "Exit Event Loop",&xmPushButtonGadgetClass,'x',
-			(char *)"<Key>G",(char *)"G",
-			continue_callback,this,NULL,(MenuItem *)NULL},
-			{(char *) "Quit Without Save",&xmPushButtonGadgetClass,'Q', 
-			//Modified by Xiaotao Yang 1/16/2015
-			(char *)"Ctrl<Key>Q",(char *)"Ctrl+Q",
-			quit_without_save,this,NULL,(MenuItem *)NULL},
-			{NULL,NULL,(char)NULL,(char *)NULL,(char *)NULL,NULL,NULL,NULL,(MenuItem *)NULL}
-		};
-        menu_file=BuildMenu(menu_bar,XmMENU_PULLDOWN,
-                (char *)"File",'F',false,file_menu);
-        XtManageChild(menu_bar);
         /* We create a secondary form which will hold the 3 seismic components within it in 
            a paned window.  We'll create that pair now one after the other. */
         Arg args[4];
@@ -500,6 +437,23 @@ void TraceEditPlot::help()
 	<<"      You can customize the robust time window (optional) before <Apply SBSW>."<<endl
 	<<"6. Tools"<<endl;
 	this->print_prefix();
+}
+//save stack
+void TraceEditPlot::save_stack_trace_to_file(StackType st)
+{
+	stringstream ss;
+	string sta=this->beam_tse.get_string("sta");
+	string chantemp=this->beam_tse.get_string("chan");
+	if(st==RobustSNR)
+		ss<<sta<<"_RobustStack_"<<chantemp<<".dat"<<'\0';
+	else if(st==BasicStack)
+		ss<<sta<<"_BasicStack_"<<chantemp<<".dat"<<'\0';
+	
+	string fname=ss.str();
+    TimeSeries ts=this->beam_tse.member[0];
+	this->teo_global.save_timeseries_to_file(ts,fname,false,this->save_metadata_version);
+	//ask for picking another trace
+	cerr<<"> ";
 }
 
 /* This callback does nothing.  It is purely a placeholder required
@@ -2334,7 +2288,7 @@ void select_trace(Widget w, XtPointer client_data, XtPointer userdata)
 				else
 					cerr<<"> ";
 			}
-			else if(plot_handle->select_trace_typename=="SAVE_TIMESERIES_TO_FILE")
+			else if(plot_handle->select_trace_typename=="SAVE_SELECTED_TRACE_TO_FILE")
 			{
 				FILE * fh;
 				stringstream ss;
@@ -2342,19 +2296,10 @@ void select_trace(Widget w, XtPointer client_data, XtPointer userdata)
 				string chantemp=sensemble->get_string("chan");
 				ss<<sta<<"_"<<evid<<"_"<<chantemp<<".dat"<<'\0';
 				string fname=ss.str();
-				fh=fopen(fname.c_str(),"w");
+// 				fh=fopen(fname.c_str(),"w");
 				TimeSeries ts=sensemble->member[tmp];
-				int metadata_version(2);
-				plot_handle->teo_global.save_metadata(ts,fh,plot_handle->use_decon_in_editing,
-						metadata_version);
-				vector<double>::iterator iptr;
-				for(iptr=ts.s.begin();iptr!=ts.s.end();++iptr)
-        		{
-					fprintf(fh,"%12.5f\n",*iptr);
-				}
-				fclose(fh);
-				cerr<<"Picked trace has been saved as text file to: "<<fname<<endl
-					<<"Metadata Version/Specifier: "<<metadata_version<<endl<<endl;
+				plot_handle->teo_global.save_timeseries_to_file(ts,fname,plot_handle->use_decon_in_editing,
+						plot_handle->save_metadata_version);
 				//ask for picking another trace
 				cerr<<"> ";
 				cerr<<"Save another trace to file? (y/n) ";
@@ -2406,6 +2351,7 @@ void select_trace(Widget w, XtPointer client_data, XtPointer userdata)
 		}
 	}catch(...){throw;};
 }
+
 //pick reference trace callback
 void pick_rt_callback(Widget w, XtPointer client_data, XtPointer userdata)
 {
@@ -2731,6 +2677,53 @@ void TraceEditPlot::customize_time_window_by_WINDOWTYPE()
 		cerr<<"> ";
 	}
 }
+void sort_by_event_BAZ_callback(Widget w, XtPointer client_data, XtPointer userdata)
+{
+	TraceEditPlot *plot_handle=reinterpret_cast<TraceEditPlot *>(client_data);  	
+	if(plot_handle->use_arrival_data)
+		plot_handle->sort_by_event_BAZ();
+	else
+		cerr<<"ERROR: use_arrival_data is set to false. "<<endl
+		<<"Can't sort by event back-azimuth."<<endl<<"> ";
+}
+//sort by station-to-event azimuth or called event back-azimuth
+void TraceEditPlot::sort_by_event_BAZ()
+{
+	this->backup_undo_tse();
+	undo_for_kill=false;
+	TimeSeriesEnsemble * sensemble;
+	TimeSeriesEnsemble *comp_tmp;
+	cerr<<"Sorting by event back-azimuth ..."<<endl<<"> ";
+	//stringstream ss;
+	int i,kmax;
+	if(ThreeComponentMode)
+		kmax=3;
+	else
+		kmax=1;
+
+	try 
+	{
+		XtAppLock(AppContext);
+		for(i=0;i<kmax;++i)
+		{
+			if(seisw[i]!=NULL)
+			{
+				XtVaGetValues(seisw[i],ExmNseiswEnsemble,&sensemble,NULL);
+				if(trace_order.size()>0) trace_order.clear();
+				trace_order=teo_global.sort_by_event_BAZ(*sensemble);
+				if(trace_order.size()>0)
+				{
+					sort_method=sensemble->get_string(sort_method_key);
+					comp_tmp=new TimeSeriesEnsemble(*sensemble);
+					XtVaSetValues(seisw[i],ExmNseiswEnsemble, 
+						(XtPointer) (comp_tmp),ExmNseiswMetadata,
+						(XtPointer)(dynamic_cast<Metadata*>(this)), NULL);
+				}
+			}
+		}
+		XtAppUnlock(AppContext);
+	}catch(...) {throw;};
+}
 void sort_by_stack_weight_callback(Widget w, XtPointer client_data, XtPointer userdata)
 {
 	TraceEditPlot *plot_handle=reinterpret_cast<TraceEditPlot *>(client_data);  
@@ -2743,7 +2736,7 @@ void TraceEditPlot::sort_by_stack_weight()
 	TimeSeriesEnsemble * sensemble;
 	TimeSeriesEnsemble *comp_tmp;
 	cerr<<"Robust stacking window = < "<<robust_twin.start<<
-			", "<<robust_twin.end<<" >"<<endl;
+			", "<<robust_twin.end<<" >"<<endl<<"> ";
     //stringstream ss;
     int i,kmax;
     if(ThreeComponentMode)
@@ -3036,25 +3029,22 @@ plot stack trace. Modified from dbxcor method (the same name).
 void do_beam_plot_callback(Widget w, XtPointer client_data, XtPointer userdata)
 {
     TraceEditPlot *plot_handle=reinterpret_cast<TraceEditPlot *>(client_data);
-    plot_handle->get_stack_trace();
+    plot_handle->get_stack_trace(RobustSNR);
     plot_handle->do_beam_plot();
 }
 
 void do_beam_plot_average_callback(Widget w, XtPointer client_data, XtPointer userdata)
 {
     TraceEditPlot *plot_handle=reinterpret_cast<TraceEditPlot *>(client_data);
-    StackType st_tmp=plot_handle->stacktype;
-    plot_handle->stacktype=BasicStack;
-    plot_handle->get_stack_trace();
-    plot_handle->stacktype=st_tmp;
+    plot_handle->get_stack_trace(BasicStack);
     plot_handle->do_beam_plot();
 }
 
-void TraceEditPlot::get_stack_trace()
+void TraceEditPlot::get_stack_trace(StackType st)
 {
 	try{
 		TimeSeriesEnsemble * sensemble;
-		if(this->stacktype==RobustSNR)
+		if(st==RobustSNR)
 			cerr<<"Robust stacking window = < "<<robust_twin.start<<
 				", "<<robust_twin.end<<" >"<<endl<<"> ";
 
@@ -3063,16 +3053,19 @@ void TraceEditPlot::get_stack_trace()
 		TimeSeries stack_tmp(sensemble->member[0]);
 		cerr<<"Computing stack ..."<<endl<<"> ";
 		stack_tmp=teo_global.get_stack(*sensemble,stack_twin,robust_twin,
-								stacktype);
+								st);
 
 		//if(beam_tse!=NULL) delete beam_tse;
 		beam_tse.member.clear();
 		//beam_tse=new TimeSeriesEnsemble(0,stack_tmp.ns);
 		beam_tse.member.push_back(stack_tmp);
+		beam_tse.put("sta",sensemble->get_string("sta"));
+		beam_tse.put("chan",sensemble->get_string("chan"));
+		beam_tse.member[0].put(evidkey,-999);
 		string beam_title;
-		if(this->stacktype==RobustSNR)
+		if(st==RobustSNR)
 			beam_title=string("Robust Stack Trace for Station: ")+sensemble->get_string("sta");
-		else if(this->stacktype==BasicStack)
+		else if(st==BasicStack)
 			beam_title=string("Average Stack Trace for Station: ")+sensemble->get_string("sta");
 		beam_tse.put("beam_title",beam_title);
 	}catch(SeisppError& serr)
@@ -3113,7 +3106,7 @@ void TraceEditPlot::do_beam_plot()
 		double beam_xcur=metadata.get_double("beam_xcur");
 		string beam_trace_axis_scaling=metadata.get_string("beam_trace_axis_scaling");
 		int wbox=metadata.get_int("wbox");
-		rshell_beam=XtVaCreatePopupShell ("Beam Plot",topLevelShellWidgetClass, 
+		rshell_beam=XtVaCreatePopupShell("Beam Plot",topLevelShellWidgetClass, 
 					get_top_shell(seisw[0]),XmNtitle,"Beam Plot",XmNallowShellResize,
 					True,XmNwidth,wbox+50,XmNheight,beam_hbox+100,XmNdeleteResponse,XmUNMAP,NULL);
 		pane = XtVaCreateWidget("Beam Plot",xmPanedWindowWidgetClass, 
@@ -3542,15 +3535,7 @@ void TraceEditPlot::exit_review_killed_traces()
 	else
 		cerr<<"ERROR: Not in the mode of 'Review Killed Traces'."<<endl;
 }
-//save selected trace to file as timeseries
-/*
-void save_timeseries_to_file_callback(Widget w, XtPointer client_data, XtPointer userdata)
-{
-	TraceEditPlot *plot_handle=reinterpret_cast<TraceEditPlot *>(client_data);  
-	plot_handle->select_trace_typename="SAVE_TIMESERIES_TO_FILE";
-	plot_handle->add_select_trace_callback();
-}
-*/
+
 //Exclude killed traces.
 void exclude_killed_trace_callback(Widget w, XtPointer client_data, XtPointer userdata)
 {
@@ -3671,6 +3656,188 @@ void TraceEditPlot::report_statistics()
 		<<"Acceptance Rate (%)      "<<acceptance_rate<<endl<<endl;
 	teo_global.report_statistics();
 	cerr<<"------ End of statistical data ------"<<endl<<"> ";
+}
+//save selected trace to file as timeseries
+void save_selected_trace_to_file_callback(Widget w, XtPointer client_data, XtPointer userdata)
+{
+	TraceEditPlot *edit_plot_handle=reinterpret_cast<TraceEditPlot *>(client_data);  
+	edit_plot_handle->select_trace_typename="SAVE_SELECTED_TRACE_TO_FILE";
+	edit_plot_handle->add_select_trace_callback();
+}
+//save all traces
+void save_all_traces_to_file_callback(Widget w, XtPointer client_data, XtPointer userdata)
+{
+	TraceEditPlot *plot_handle=reinterpret_cast<TraceEditPlot *>(client_data);
+	plot_handle->save_all_traces_to_file();
+}
+//save all traces
+void TraceEditPlot::save_all_traces_to_file()
+{
+	int i,kmax(1); //force kmax=1 for our case.
+	TimeSeriesEnsemble * sensemble;
+	
+	try
+	{
+		XtAppLock(AppContext);
+		for(i=0;i<kmax;++i)
+		{
+			if(seisw[i]!=NULL)
+			{
+				XtVaGetValues(seisw[i],ExmNseiswEnsemble,&sensemble,NULL);
+				teo_global.save_timeseries_to_file(*sensemble,sensemble->get_string("sta"),
+						use_decon_in_editing,this->save_metadata_version);
+			}
+		}
+		cerr<<"> ";
+	}catch(...){throw;};
+}
+void TraceEditPlot::choose_save_metadata_version()
+{
+    cerr<<"Warning: this choice will overwrite the default [2] for future stations, until changed again."<<endl;
+    cerr<<"Choose metadata version code for saved trace from below (1, 2, 3):"<<endl
+    <<"  1  - Example below (basic version)  "<<endl
+    <<"     %Metadata version 1"<<endl
+    <<"     station            : BLO"<<endl
+    <<"     start_time         :  4/01/2014  23:56:30.025"<<endl
+    <<"     evid               :       1169"<<endl
+    <<"     samples            :       6001"<<endl
+    <<"     dt                 :   0.025000"<<endl
+    <<"     t0                 : -29.987570"<<endl
+    <<"     stack_weight       : -9999.0000"<<endl
+    <<"     RT_xcorcoe         : -9999.0000"<<endl
+    <<"     RFQualityIndex     : -9999.0000"<<endl
+    <<"     DeconSuccessIndex  :  0.4620"<<endl
+    <<"     niteration         :          3"<<endl
+    <<"     nspike             :          2"<<endl
+    <<"     epsilon            :   30.69890"<<endl
+    <<"     peakamp            :    0.40356"<<endl
+    <<"     averamp            :    0.00535"<<endl
+    <<"     rawsnr             :    2.50000"<<endl
+    <<"  2  - Example below (basic+magnitude)"<<endl
+    <<"     %Metadata version 2"<<endl
+    <<"     station            : BLO"<<endl
+    <<"     start_time         :  4/01/2014  23:56:30.025"<<endl
+    <<"     evid               :       1169"<<endl
+    <<"     magnitude          : -9999.00"<<endl
+    <<"     magtype            : -"<<endl
+    <<"     samples            :       6001"<<endl
+    <<"     dt                 :   0.025000"<<endl
+    <<"     t0                 : -29.987570"<<endl
+    <<"     stack_weight       : -9999.0000"<<endl
+    <<"     RT_xcorcoe         : -9999.0000"<<endl
+    <<"     RFQualityIndex     : -9999.0000"<<endl
+    <<"     DeconSuccessIndex  :  0.4620"<<endl
+    <<"     niteration         :          3"<<endl
+    <<"     nspike             :          2"<<endl
+    <<"     epsilon            :   30.69890"<<endl
+    <<"     peakamp            :    0.40356"<<endl
+    <<"     averamp            :    0.00535"<<endl
+    <<"     rawsnr             :    2.50000"<<endl
+    <<"  3  - Example below (basic+magnitude+back_azimuth) "<<endl
+    <<"     %Metadata version 3"<<endl
+    <<"     station            : BLO"<<endl
+    <<"     start_time         :  4/01/2014  23:56:30.025"<<endl
+    <<"     evid               :       1169"<<endl
+    <<"     magnitude          : -9999.00"<<endl
+    <<"     magtype            : -"<<endl
+    <<"     back_azimuth       : 172.5"<<endl
+    <<"     samples            :       6001"<<endl
+    <<"     dt                 :   0.025000"<<endl
+    <<"     t0                 : -29.987570"<<endl
+    <<"     stack_weight       : -9999.0000"<<endl
+    <<"     RT_xcorcoe         : -9999.0000"<<endl
+    <<"     RFQualityIndex     : -9999.0000"<<endl
+    <<"     DeconSuccessIndex  :  0.4620"<<endl
+    <<"     niteration         :          3"<<endl
+    <<"     nspike             :          2"<<endl
+    <<"     epsilon            :   30.69890"<<endl
+    <<"     peakamp            :    0.40356"<<endl
+    <<"     averamp            :    0.00535"<<endl
+    <<"     rawsnr             :    2.50000"<<endl
+    <<"> Your choice (1, 2, 3): ";
+    int itmp;
+    
+    cin>>itmp;
+    cerr<<"> "<<endl;
+    if(itmp==1 || itmp==2 || itmp==3 )
+        this->save_metadata_version=itmp;
+    else
+        cerr<<"Error in choose_save_metadata_version(): wrong attribute code."<<endl;
+}
+//save Robust stack
+void save_robuststack_trace_to_file_callback(Widget w, XtPointer client_data, XtPointer userdata)
+{
+    TraceEditPlot *plot_handle=reinterpret_cast<TraceEditPlot *>(client_data);
+    plot_handle->get_stack_trace(RobustSNR);
+    plot_handle->save_stack_trace_to_file(RobustSNR);
+}
+
+//save simple average stack
+void save_basicstack_trace_to_file_callback(Widget w, XtPointer client_data, XtPointer userdata)
+{
+    TraceEditPlot *plot_handle=reinterpret_cast<TraceEditPlot *>(client_data);
+	plot_handle->get_stack_trace(BasicStack);
+	plot_handle->save_stack_trace_to_file(BasicStack);
+}
+void choose_save_metadata_version_callback(Widget w, XtPointer client_data, XtPointer userdata)
+{
+    TraceEditPlot *plot_handle=reinterpret_cast<TraceEditPlot *>(client_data);
+    plot_handle->choose_save_metadata_version();
+}
+void continue_callback(Widget w, XtPointer client_data, XtPointer call_data)
+{
+    TraceEditPlot *edit_plot_handle=reinterpret_cast<TraceEditPlot *>(client_data);  
+	edit_plot_handle->report_kills();   //report kills when saving and quiting the display.
+	if(edit_plot_handle->killed_review_mode) 
+		edit_plot_handle->exit_review_killed_traces();
+	edit_plot_handle->reset_local_variables();
+    SeismicPlot *plot_handle=reinterpret_cast<SeismicPlot *>(client_data);
+    for(int i=0; i<3; ++i) plot_handle->original_ensemble[i].member.clear();
+    plot_handle->ExitDisplay();
+}
+//cleanly quit program. Xiaotao Yang 1/201516/
+void quit_without_save(Widget w, XtPointer client_data, XtPointer call_data)
+{
+	SeismicPlot *plot_handle=reinterpret_cast<SeismicPlot *>(client_data);
+    plot_handle->~SeismicPlot();
+    cerr<<"Quiting program..."<<endl;
+	exit(-1);
+}
+void TraceEditPlot::build_file_menu()
+{
+	MenuItem file_submenu_save_trace[]={
+		{(char *)"Pick A Trace",&xmPushButtonGadgetClass,(char)'T', (char *)"Ctrl<Key>T",(char *)"Ctrl+T",
+			save_selected_trace_to_file_callback,this,NULL,(MenuItem *)NULL},
+		{(char *)"All Traces",&xmPushButtonGadgetClass,(char)NULL,(char *)NULL,(char *)NULL,
+			save_all_traces_to_file_callback,this,NULL,(MenuItem *)NULL},
+		{(char *)"Robust Stack Trace",&xmPushButtonGadgetClass,(char)NULL,(char *)NULL,(char *)NULL,
+		save_robuststack_trace_to_file_callback,this,NULL,(MenuItem *)NULL},
+		{(char *)"Average Stack Trace",&xmPushButtonGadgetClass,(char)NULL,(char *)NULL,(char *)NULL,
+		save_basicstack_trace_to_file_callback,this,NULL,(MenuItem *)NULL},
+        {(char *)"<Choose Metadata Version>",&xmPushButtonGadgetClass,(char)NULL,(char *)NULL,(char *)NULL,
+            choose_save_metadata_version_callback,this,NULL,(MenuItem *)NULL},
+		{NULL,NULL,(char)NULL,(char *)NULL,(char *)NULL,NULL,NULL,NULL,(MenuItem *)NULL}
+	};
+	MenuItem file_menu[]={
+		{(char *) "<Save Trace To File>",
+		&xmPushButtonGadgetClass,(char)NULL,
+		(char *)NULL,(char *)NULL,
+		NULL,
+		this,NULL,file_submenu_save_trace},
+		//Modified by Xiaotao Yang 1/16/2015
+		//(char *) "Exit Event Loop",&xmPushButtonGadgetClass,'x',
+		{(char *) "Save & Go Next",&xmPushButtonGadgetClass,(char)'G', 
+		(char *)"<Key>G",(char *)"G",
+		continue_callback,this,NULL,(MenuItem *)NULL},
+		//Modified by Xiaotao Yang 1/16/2015
+		{(char *) "Quit Without Save",&xmPushButtonGadgetClass,(char)'Q', 
+		(char *)"Ctrl<Key>Q",(char *)"Ctrl+Q",
+		quit_without_save,this,NULL,(MenuItem *)NULL},
+		{NULL,NULL,(char)NULL,(char *)NULL,(char *)NULL,NULL,NULL,NULL,(MenuItem *)NULL}
+	};
+	menu_file=BuildMenu(menu_bar,XmMENU_PULLDOWN,
+			(char *)"File",'F',false,file_menu);
+	XtManageChild(menu_bar);
 }
 //modified by Xiaotao Yang adding two pull down menues.
 // Default forces single trace edit mode so use that label here.
@@ -4237,6 +4404,11 @@ void TraceEditPlot::build_sort_menu()
         (char *)NULL,(char *)NULL,
         sort_by_magnitude_callback,
         this,NULL,(MenuItem *)NULL},
+        {(char *)"By Event Back-Azimuth",
+            &xmPushButtonGadgetClass,(char)NULL,
+            (char *)NULL,(char *)NULL,
+            sort_by_event_BAZ_callback,
+            this,NULL,(MenuItem *)NULL},
         {(char *)"By Correlation With Ref-Trace",
         &xmPushButtonGadgetClass,(char)NULL,
         (char *)NULL,(char *)NULL,
@@ -4453,7 +4625,7 @@ void TraceEditPlot::build_tools_menu()
         (char *)NULL,(char *)NULL,
         report_statistics_callback,
         this,NULL,(MenuItem *)NULL},
-        {(char *)"Compute Decon-Attributes",
+        {(char *)"Compute Decon-Attributes (Future release)",
         &xmPushButtonGadgetClass,(char)NULL,
         (char *)NULL,(char *)NULL,
         NULL,
@@ -4525,6 +4697,7 @@ void TraceEditPlot::set_defaults()
 	CodaCA_tolerance_twin_length=1e5;
 	PCoda_grow_tolerance=0.0;
     robust_twin=TimeWindow(0.0,120.0);
+    use_arrival_data=false;
     use_decon_in_editing=false;
     use_netmag_table=false;
     ref_trace_xcor_twin_set=false;
@@ -4651,6 +4824,12 @@ void TraceEditPlot::set_defaults(Metadata& md)
     robust_twin=TimeWindow(md.get_double("robust_window_start")+FA_reference_time,
         					md.get_double("robust_window_end")+FA_reference_time);
     //default decon thresholds.
+    use_arrival_data=md.get_bool("use_arrival_data");
+//    if(use_arrival_data)
+//        cerr<<"use_arrival_data is true."<<endl;
+//    else
+//        cerr<<"use_arrival_data is false."<<endl;
+//
     use_decon_in_editing=md.get_bool("use_decon_in_editing");
     use_netmag_table=md.get_bool("use_netmag_table");
     nspike_min=md.get_int("nspike_min"); //10
@@ -4704,6 +4883,7 @@ TraceEditPlot::TraceEditPlot() : SeismicPlot(),teo_global()
     this->set_defaults();
     this->edit_enable();
     //build trace edit plot menus.
+    this->build_file_menu();
     this->build_edit_menu();
     this->build_view_menu();
     this->build_sort_menu();
@@ -4743,6 +4923,7 @@ TraceEditPlot::TraceEditPlot(Metadata& md) : SeismicPlot(md),teo_global(md)
     			// some of them could stay as default values.	
     //build trace edit plot menus.
     this->edit_enable();
+    this->build_file_menu();
     this->build_edit_menu();
     this->build_view_menu();
     this->build_sort_menu();

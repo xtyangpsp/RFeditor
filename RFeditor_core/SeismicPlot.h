@@ -45,6 +45,10 @@ using namespace SEISPP;
 
    \author Gary L. Pavlis
    */
+/*
+	Moved File menue building function to TraceEditPlot and added options to save traces of multiple types.
+	Xiaotao Yang July 22, 2018
+*/
 class SeismicPlot : public BasicSeisPlot, public Metadata
 {
     public:

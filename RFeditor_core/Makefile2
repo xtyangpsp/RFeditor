@@ -6,7 +6,7 @@ DATA=tredit decon wfprocess evlink sclink
 SUBDIR=/contrib
 
 ldlibs=-lseispp -lbrttutil $(TRLIBS) $(DBLIBS) -L$(XMOTIFLIB) \
-       -L$(BOOSTLIB) -lboost_thread -lboost_system -Llibseisw -lseisw \
+       -L$(BOOSTLIB) -lboost_thread -lboost_system -lboost_filesystem -Llibseisw -lseisw \
        -lXm -lXt -lperf $(X11LIBS)
 ANTELOPEMAKELOCAL = $(ANTELOPE)/contrib/include/antelopemake.local
 include $(ANTELOPEMAKE)  	

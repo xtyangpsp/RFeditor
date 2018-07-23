@@ -2,6 +2,7 @@
 #define _TRACEEDITOPERATOR_H
 #include <string>
 #include <fstream>
+#include "boost/filesystem.hpp"
 #include "TimeSeries.h"
 #include "seispp.h"
 #include "SeisppKeywords.h"
@@ -78,8 +79,11 @@ const int STATISTICS_INTDEFAULT(-9999);
 const TimeWindow STATISTICS_TWDEFAULT(TimeWindow(0,1e15));
 /*
 //RFeditor Editing procedures/methods used in RFeditor.
-//
+// 
 // Author: Xiaotao Yang Jan - Mar 2015
+// 1. Moved File menue building function to TraceEditPlot and added options to save traces of multiple types.
+// 2. Add metadata version=3 to save back azimuth to file.
+//	Xiaotao Yang on July 22, 2018
 // Indiana University
 */
 /* TraceEditStatistics
@@ -186,8 +190,12 @@ class TraceEditOperator
 		// by default, the metadata version is 1 for this routine.
 		////void save_metadata(TimeSeries& ts, FILE * fh, bool use_decon);
 		// extract and save metadata for given trace (with evid) to FILE handle fh.
-		// mdversion: metadata version, currently supports 1, 2. default is 1
+		// mdversion: metadata version, currently supports 1, 2, 3. default is 1
 		void save_metadata(TimeSeries& ts, FILE * fh, bool use_decon, int mdversion=1);
+		// save timeseries to file. default is using metadata_version=1.
+		void save_timeseries_to_file(TimeSeries ts, string fname,bool use_decon, int metadata_version=1); 
+		void save_timeseries_to_file(TimeSeriesEnsemble& tse, string dirname, 
+			bool use_decon, int metadata_version=1);
 		//those two routines find the common time window of all of the members.
 		//This is useful when the members don't share the same length.
 		TimeWindow find_common_timewindow(TimeSeriesEnsemble& tse);
@@ -199,6 +207,8 @@ class TraceEditOperator
 					int ref_evid, TimeWindow xcor_twin);
 		bool compute_trace_xcorcoe(TimeSeriesEnsemble& tse, 
 					TimeSeries& ref_trace, TimeWindow xcor_twin);
+		//Sort by station-to-event azimuth (or event back azimuth) extracted from trace metadata
+		vector<int> sort_by_event_BAZ(TimeSeriesEnsemble& tse);
 		//compute correlation coefficience of the reference trace and the members in the ensemble.
 		//this could be modified to read in the trace number of the reference trace instead of
 		// the evid, but not neccessary. Then sort by less correlation coefficience.
@@ -393,6 +403,8 @@ class TraceEditOperator
 		
 	private:
 		void set_operator_defaults();
+		bool use_arrival_data=false;
+		bool use_decon_in_editing=false;
 		double FA_sensitivity;
 		string data_shaping_wavelet_type;
 		string decon_nspike_key;

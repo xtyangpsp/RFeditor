@@ -569,12 +569,12 @@ bool TraceEditOperator::show_metadata(TimeSeriesEnsemble& tse, long evid, bool u
 				peakamp(-9999.0),averamp(-9999.0),rawsnr(-9999.0);
 		if(ts_tmp.is_attribute_set(SEISPP::stack_weight_keyword))
 			stw=ts_tmp.get_double(SEISPP::stack_weight_keyword);
-		else
-			cerr<<"Warning: stack weight keyword not set!"<<endl;
+		// else
+// 			cerr<<"Warning: stack weight keyword not set!"<<endl;
 		if(ts_tmp.is_attribute_set(xcorcoekey))
 			rtxc=ts_tmp.get_double(xcorcoekey);
-		else
-			cerr<<"Warning: ref trace xcorcoe keyword not set!"<<endl;
+		// else
+// 			cerr<<"Warning: ref trace xcorcoe keyword not set!"<<endl;
 		if(use_decon)
 		{
 			try{
@@ -600,7 +600,7 @@ bool TraceEditOperator::show_metadata(TimeSeriesEnsemble& tse, long evid, bool u
 		
 		//debug
 		if(ts_tmp.is_attribute_set(seaz_key))
-		{cerr<<"SEAZ:         : "<<ts_tmp.get_double(seaz_key)<<endl;}
+		{cerr<<"back_azimuth  : "<<ts_tmp.get_double(seaz_key)<<endl;}
 		cerr<<"Stack weight  : "<<stw<<endl
 			<<"RT XcorCoe    : "<<rtxc<<endl;
 		if(ts_tmp.is_attribute_set(killed_trace_key))
@@ -712,7 +712,7 @@ bool TraceEditOperator::show_metadata(TimeSeriesEnsemble& tse, long evid, bool u
 // 	}
 // }
 // extract and save metadata for given trace (with evid) to FILE handle fh.
-// mdversion: metadata version, currently supports 1, 2.
+// mdversion: metadata version, currently supports 1, 2, 3.
 void TraceEditOperator::save_metadata(TimeSeries& ts, FILE * fh, bool use_decon, int mdversion)
 {
 	try
@@ -721,16 +721,18 @@ void TraceEditOperator::save_metadata(TimeSeries& ts, FILE * fh, bool use_decon,
 		int niteration(-99),nspike(-99);
 		double stw(-9999.0), rtxc(-9999.0),epsilon(-9999.0),
 				peakamp(-9999.0),averamp(-9999.0),rawsnr(-9999.0),
-				rfqi(-9999.0),dsi(-9999.0),magnitude(-9999.0);
+				rfqi(-9999.0),dsi(-9999.0),magnitude(-9999.0),back_azimuth(-9999.0);
 		string magtype("-");
 		if(ts.is_attribute_set(SEISPP::stack_weight_keyword))
 			stw=ts.get_double(SEISPP::stack_weight_keyword);
-		else
-			cerr<<"Warning: stack weight keyword not set! Save default."<<endl;
+		// else
+// 			cerr<<"Warning: stack weight keyword not set! Save default."<<endl;
 		if(ts.is_attribute_set(xcorcoekey))
 			rtxc=ts.get_double(xcorcoekey);
-		else
-			cerr<<"Warning: ref trace xcorcoe keyword not set! Save default."<<endl;
+		// else
+// 			cerr<<"Warning: ref trace xcorcoe keyword not set! Save default."<<endl;
+		if(ts.is_attribute_set(seaz_key))
+			back_azimuth=ts.get_double(seaz_key);
 		if(use_decon)
 		{
 			if(ts.is_attribute_set(decon_success_index_key))
@@ -772,7 +774,7 @@ void TraceEditOperator::save_metadata(TimeSeries& ts, FILE * fh, bool use_decon,
 		//save to fh.
 		switch(mdversion)
 		{
-			case 1:
+			case 1: //basic version
 				fprintf(fh,"%%Metadata version %d\n",mdversion);
 				fprintf(fh,"station            : %s\n",sta.c_str());
 				fprintf(fh,"start_time         : %s\n",start_time.c_str());
@@ -791,13 +793,35 @@ void TraceEditOperator::save_metadata(TimeSeries& ts, FILE * fh, bool use_decon,
 				fprintf(fh,"averamp            : %10.5f\n",averamp);
 				fprintf(fh,"rawsnr             : %10.5f\n",rawsnr);
 				break;
-			case 2:
+			case 2: //basic+magnitude
 				fprintf(fh,"%%Metadata version %d\n",mdversion);
 				fprintf(fh,"station            : %s\n",sta.c_str());
 				fprintf(fh,"start_time         : %s\n",start_time.c_str());
 				fprintf(fh,"evid               : %10d\n",evid);
 				fprintf(fh,"magnitude          : %6.2f\n",magnitude);
 				fprintf(fh,"magtype            : %s\n",magtype.c_str());
+				fprintf(fh,"samples            : %10d\n",nsamp);
+				fprintf(fh,"dt                 : %10.6f\n",dt);
+				fprintf(fh,"t0                 : %10.6f\n",t0);
+				fprintf(fh,"stack_weight       : %7.4f\n",stw);
+				fprintf(fh,"RT_xcorcoe         : %7.4f\n",rtxc);
+				fprintf(fh,"RFQualityIndex     : %7.4f\n",rfqi);
+				fprintf(fh,"DeconSuccessIndex  : %7.4f\n",dsi);
+				fprintf(fh,"niteration         : %10d\n",niteration);
+				fprintf(fh,"nspike             : %10d\n",nspike);
+				fprintf(fh,"epsilon            : %10.5f\n",epsilon);
+				fprintf(fh,"peakamp            : %10.5f\n",peakamp);
+				fprintf(fh,"averamp            : %10.5f\n",averamp);
+				fprintf(fh,"rawsnr             : %10.5f\n",rawsnr);
+				break;
+			case 3: //basic+magnitude+back_azimuth
+				fprintf(fh,"%%Metadata version %d\n",mdversion);
+				fprintf(fh,"station            : %s\n",sta.c_str());
+				fprintf(fh,"start_time         : %s\n",start_time.c_str());
+				fprintf(fh,"evid               : %10d\n",evid);
+				fprintf(fh,"magnitude          : %6.2f\n",magnitude);
+				fprintf(fh,"magtype            : %s\n",magtype.c_str());
+				fprintf(fh,"back_azimuth       : %8.2f\n",back_azimuth);
 				fprintf(fh,"samples            : %10d\n",nsamp);
 				fprintf(fh,"dt                 : %10.6f\n",dt);
 				fprintf(fh,"t0                 : %10.6f\n",t0);
@@ -819,6 +843,66 @@ void TraceEditOperator::save_metadata(TimeSeries& ts, FILE * fh, bool use_decon,
 	{
 		serr.what();
 	}
+}
+//save timeseries to file. default is using metadata_version=1.
+void TraceEditOperator::save_timeseries_to_file(TimeSeries ts, string fname, 
+			bool use_decon, int metadata_version)
+{
+	try
+	{
+		FILE * fh;
+		fh=fopen(fname.c_str(),"w");
+		
+		this->save_metadata(ts,fh,use_decon,metadata_version);
+		vector<double>::iterator iptr;
+		for(iptr=ts.s.begin();iptr!=ts.s.end();++iptr)
+		{
+			fprintf(fh,"%12.5f\n",*iptr);
+		}
+		fclose(fh);
+		cerr<<"Trace has been saved as text file to: "<<fname<<endl
+			<<"Metadata Version/Specifier: "<<metadata_version<<endl<<endl;
+	}catch(...){throw;};
+}
+//save timeseries to file. default is using metadata_version=1.
+void TraceEditOperator::save_timeseries_to_file(TimeSeriesEnsemble& tse, string dirname, 
+			bool use_decon, int metadata_version)
+{
+	try
+	{
+// 		TimeSeries ts_tmp;
+// 		const string errorbase("save_timeseries_to_file(TimeSeriesEnsemble): ");
+		vector<TimeSeries>::iterator iptr;
+// 		boost::filesystem::path dirstring=dirname;
+		if (!boost::filesystem::exists(dirname))
+			boost::filesystem::create_directory(dirname);
+		string sta,chantemp;
+		int i,trn;
+		int evid;
+		for(i=0,iptr=tse.member.begin();iptr!=tse.member.end();++i,++iptr)
+		{
+			evid=iptr->get_int(evidkey);
+
+			FILE * fh;
+			stringstream ss;
+			sta=iptr->get_string("sta");
+			chantemp=iptr->get_string("chan");
+			ss<<dirname<<"/"<<sta<<"_"<<evid<<"_"<<chantemp<<".dat"<<'\0';
+			string fname=ss.str();
+			fh=fopen(fname.c_str(),"w");
+			
+			this->save_metadata(*iptr,fh,use_decon,metadata_version);
+			vector<double>::iterator iptr2;
+			for(iptr2=iptr->s.begin();iptr2!=iptr->s.end();++iptr2)
+			{
+				fprintf(fh,"%12.5f\n",*iptr2);
+			}
+			fclose(fh);
+		}
+		cerr<<tse.member.size()<<" traces have been saved as text files under directory: "<<dirname<<endl
+			<<"File name convention: Station_EventID_Channel.dat"<<endl
+			<<"Metadata Version/Specifier: "<<metadata_version<<endl<<endl;
+	}catch(...){throw;};
 }
 // extract and print out metadata for ALL traces (with given attribute).
 bool TraceEditOperator::show_metadata(TimeSeriesEnsemble& tse, string mdtag,MDtype mdt)
@@ -1602,6 +1686,34 @@ vector<int> TraceEditOperator::sort_by_ascend_magnitude(TimeSeriesEnsemble& tse)
             result.push_back(im);
         }
         tse.put(sort_method_key,(char *)"event_magnitude");
+    	return result;
+    }catch(...){throw;};
+}
+//Sort by station-to-event azimuth (or event back azimuth) extracted from trace metadata
+vector<int> TraceEditOperator::sort_by_event_BAZ(TimeSeriesEnsemble& tse)
+{
+	try
+	{	
+		const string base_message("sort_by_event_BAZ: ");
+		int i;
+		vector<int> result;
+		vector<TimeSeries>::iterator iptr;
+		//put sortkey.
+		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
+		{
+			iptr->put(ensemblesortkey,seaz_key);
+		}
+        //sort
+        sort(tse.member.begin(),tse.member.end(),sort_less_double<TimeSeries>());
+        
+        result.reserve(tse.member.size());
+        for(i=0,iptr=tse.member.begin();iptr!=tse.member.end();++iptr,++i)
+        {
+            int im;
+            im=iptr->get_int(evidkey);
+            result.push_back(im);
+        }
+        tse.put(sort_method_key,(char *)"station-to-event_BAZ");
     	return result;
     }catch(...){throw;};
 }
@@ -3728,8 +3840,9 @@ TraceEditOperator::TraceEditOperator(Metadata& md)
 		this->set_operator_defaults();
 		FA_sensitivity=md.get_double("FA_sensitivity");
 		data_shaping_wavelet_type=md.get_string("data_shaping_wavelet_type");
-		bool use_decon_in_editing=md.get_bool("use_decon_in_editing");
-		if(use_decon_in_editing)
+		this->use_arrival_data=md.get_bool("use_arrival_data");
+		this->use_decon_in_editing=md.get_bool("use_decon_in_editing");
+		if(this->use_decon_in_editing)
 		{
 			decon_nspike_key=md.get_string("decon_nspike_key");
 			decon_rawsnr_key=md.get_string("decon_rawsnr_key");
