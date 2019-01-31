@@ -325,7 +325,7 @@ void SeismicPlot::plot(ThreeComponentEnsemble& d,bool block_for_event)
 	XtAppLock(AppContext);
         for(k=0;k<3;++k)
         {
-            auto_ptr<TimeSeriesEnsemble> c;
+            shared_ptr<TimeSeriesEnsemble> c;
             c=ExtractComponent(d,k);
             /* This proved necessary to get around a mysterious behaviour I never figured out
                if I tried to save the raw auto_ptr. I suspect it is related to the single owner

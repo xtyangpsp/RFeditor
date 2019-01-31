@@ -2120,7 +2120,7 @@ int main(int argc, char **argv)
 				{
 					if(save_3C_data || review_mode)
 					{
-						auto_ptr<TimeSeriesEnsemble> data=ExtractComponent(dall_3c,edit_component);
+						shared_ptr<TimeSeriesEnsemble> data=ExtractComponent(dall_3c,edit_component);
 						tse_edit=*data;
 						data.reset();
 						/*
@@ -2134,17 +2134,17 @@ int main(int argc, char **argv)
 					}
 					else
 					{
-						auto_ptr<TimeSeriesEnsemble> tdata=ExtractComponent(dall_3c,0);
+						shared_ptr<TimeSeriesEnsemble> tdata=ExtractComponent(dall_3c,0);
 						transverse=*tdata;
 						transverse.put("chan",tchan);
-						auto_ptr<TimeSeriesEnsemble> rdata=ExtractComponent(dall_3c,1);
+						shared_ptr<TimeSeriesEnsemble> rdata=ExtractComponent(dall_3c,1);
 						radial=*rdata;
 						radial.put("chan",rchan);
 						tdata.reset();
 						rdata.reset();
 						if(save_vertical_channel) 
 						{
-							auto_ptr<TimeSeriesEnsemble> zdata=ExtractComponent(dall_3c,2);
+							shared_ptr<TimeSeriesEnsemble> zdata=ExtractComponent(dall_3c,2);
 							vertical=*zdata;
 							vertical.put("chan",zchan);
 							zdata.reset();
