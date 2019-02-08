@@ -89,9 +89,6 @@ compile on either solaris or g++ if these appear after the Xm includes.
 #include "display_marker.h"
 #include "xplot.h"
 
-using namespace std;
-using namespace SEISPP;
-
 #define TOPLEAVE        1
 #define BOTTOMLEAVE     2
 #define LEFTLEAVE       4
