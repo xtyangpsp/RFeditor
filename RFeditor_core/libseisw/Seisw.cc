@@ -63,6 +63,7 @@ compile on either solaris or g++ if these appear after the Xm includes.
 --GLP August 1, 2006*/
 #include <string.h>
 #include <vector>
+#include <cmath>
 #include "seispp.h"
 #include "TimeSeries.h"
 #include "ensemble.h"
@@ -88,8 +89,8 @@ compile on either solaris or g++ if these appear after the Xm includes.
 #include "display_marker.h"
 #include "xplot.h"
 
-//using namespace std;
-//using namespace SEISPP;
+using namespace std;
+using namespace SEISPP;
 
 #define TOPLEAVE        1
 #define BOTTOMLEAVE     2
