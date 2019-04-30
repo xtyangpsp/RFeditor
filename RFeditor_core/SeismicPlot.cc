@@ -3619,7 +3619,7 @@ void TraceEditPlot::report_kills()
 			if(local_kills.size()>0)
 				this->kills.insert(local_kills.begin(),local_kills.end());  
 		}  
-		cerr<<"Total number of kills: "<<kills.size()<<"> "<<endl;
+		cerr<<"Total number of kills: "<<kills.size()<<endl<<"> "<<endl;
 	}catch(...){throw;};
 }
 void report_statistics_callback(Widget w, 

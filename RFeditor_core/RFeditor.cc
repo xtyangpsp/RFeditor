@@ -17,6 +17,7 @@
 #include "TraceEditPlot.h"
 #include "TraceEditOperator.h"
 #include "filter++.h"
+
 using namespace std;
 using namespace SEISPP;
 //const string evidkey("eventid");   // not evid to avoid collision
@@ -192,7 +193,6 @@ void usage()
 	usage_message();
     exit(-1);
 }
-
 bool SEISPP::SEISPP_verbose(false);
 /* Simple algorithm sets an int metadata item (evidkey defined in 
    RFeditorEngine) by a simple counts starting at 1.  
@@ -821,8 +821,8 @@ int save_to_db(ThreeComponentEnsemble& tce,MetadataList& mdl,
 			try {
 				d->put("dir",outdir);
 				//debug
-				//cout<<"db: save to dir: "<<outdir<<endl;
-				//cout<<"db: dir in db: "<<d->get_string("dir")<<endl;
+				cout<<"db: save to dir: "<<outdir<<endl;
+				cout<<"db: dir in db: "<<d->get_string("dir")<<endl;
 				if(outtable=="wfprocess")
 				{
 					outdfile=outdfile_base+"_"+d->get_string("sta")+".3C";
@@ -1936,7 +1936,8 @@ int main(int argc, char **argv)
 			else
 				fprintf(fh_fa,"STA    EVID    START_TIME    FA_LAG    FA_AMPR\n");
 		}
-        for(i=0,dbin.rewind();i<nsta;++i,++dbin)
+//         for(i=0,dbin.rewind();i<nsta;++i,++dbin)
+        for(i=0,dbin.rewind();i<1;++i,++dbin)
         {   
             cout <<">>++++++++++++++++++++++++++++++"<<endl
             	<<"Calling data reader for ensemble number ["<<i+1<<" / "<<nsta<<"]"<<endl;
@@ -2166,7 +2167,7 @@ int main(int argc, char **argv)
 			
 			tse_edit.put("chan",edit_chan_code);
 			
-            int j=set_duplicate_traces_to_false(tse_edit,false);
+            int j=set_duplicate_traces_to_false(tse_edit,SEISPP_verbose);
             if(j>0 && SEISPP_verbose)
             	cout<<"Duplicate traces in "<<edit_on_channel<<" (set to false) = "<<j<<endl;
 
@@ -2307,7 +2308,7 @@ int main(int argc, char **argv)
 				//find total number of killed traces.
 				set<long> evids_killed2;
 				evids_killed2=kills;
-				//cout<<evids_killed2.size()<<endl;
+// 				cout<<"killed traces: "<<evids_killed2.size()<<endl;
 				if(evids_killed2.size()>0)
 					evids_killed.insert(evids_killed2.begin(),evids_killed2.end());
 				cout<<"Found [ "<<evids_killed.size()<<" ] killed traces."<<endl;

@@ -3,6 +3,7 @@
 #include <vector>
 #include "perf.h"
 #include "TraceEditOperator.h"
+bool MYDEBUGMODE(true); // when true, the program will output some values for checking purpose.
 using namespace std;
 using namespace SEISPP;
    //1e-10.
@@ -2470,7 +2471,7 @@ void TraceEditOperator::apply_kills(TimeSeriesEnsemble& tse, set<long> evids_to_
         }
         //DEBUG
         //cout<<"Number of traces in input data: "<<tse.member.size()<<endl;
-        //cout<<"size of evids_to_kill in apply_kills_to_other: "<<evids_to_kill.size()<<endl;
+        //cout<<"size of evids_to_kill in apply_kills: "<<evids_to_kill.size()<<endl;
         //cout<<"Number of kills applied in apply_kills_to_other: "<<numkill<<endl;
     }catch(...){throw;};
 }
@@ -2484,7 +2485,7 @@ void TraceEditOperator::apply_kills(ThreeComponentEnsemble& tce, set<long> evids
             if(tptr->live)
             {
 				// Skip stack trace when present 
-				string sta=tptr->get_string("sta");
+// 				string sta=tptr->get_string("sta");
 				int evid=tptr->get_long(evidkey);
 				if(evid==evid_tmp) cout<<"duplicate evid: "<<evid<<endl;
 				if(evids_to_kill.find(evid)!=evids_to_kill.end())
@@ -2497,9 +2498,12 @@ void TraceEditOperator::apply_kills(ThreeComponentEnsemble& tce, set<long> evids
             }
         }
         //DEBUG
-        //cout<<"Number of traces in input data: "<<tse.member.size()<<endl;
-        //cout<<"size of evids_to_kill in apply_kills_to_other: "<<evids_to_kill.size()<<endl;
-        //cout<<"Number of kills applied in apply_kills_to_other: "<<numkill<<endl;
+        if(MYDEBUGMODE)
+        {
+			cout<<"Number of traces in input data: "<<tce.member.size()<<endl;
+			cout<<"size of evids_to_kill in apply_kills: "<<evids_to_kill.size()<<endl;
+			cout<<"Number of kills applied in apply_kills: "<<numkill<<endl;
+        }
     }catch(...){throw;};
 }
 /* Returns a new ensemble reordered by ordering.   Does this 

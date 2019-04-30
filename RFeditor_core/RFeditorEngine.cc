@@ -327,7 +327,8 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& rd)
 			rkills0=RFwindow->kills;
 			RFwindow->kills.clear();
 			nkilled=rkills0.size();
-
+			//debug
+			cout<<"nkilled: "<<nkilled<<endl;
         	return(rkills0);
         }
         else

@@ -37,7 +37,7 @@ here.  See documentation for SeismicPlot for a longer explanation.
 \author Gary L. Pavlis
 */
 /*
-This program has been heavily develped by Xiaotao Yang to acheive the following aims:
+This program has been heavily developed by Xiaotao Yang to acheive the following objectives:
 1. apply auto-editing procedures basically calling the procedures and utilites in 
 	TraceEditOperator object;
 2. apply thresholds for relavant parameters, e.g., decon parameters, stack weight,
