@@ -1979,8 +1979,8 @@ int main(int argc, char **argv)
 			else
 				fprintf(fh_fa,"STA    EVID    START_TIME    FA_LAG    FA_AMPR\n");
 		}
-//         for(i=0,dbin.rewind();i<nsta;++i,++dbin)
-        for(i=0,dbin.rewind();i<1;++i,++dbin)
+		for(i=0,dbin.rewind();i<nsta;++i,++dbin)
+//        for(i=0,dbin.rewind();i<1;++i,++dbin)
         {   
             cout <<">>++++++++++++++++++++++++++++++"<<endl
             	<<"Calling data reader for ensemble number ["<<i+1<<" / "<<nsta<<"]"<<endl;
