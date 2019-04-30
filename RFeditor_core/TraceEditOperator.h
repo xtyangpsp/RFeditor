@@ -11,10 +11,11 @@
 #include "dbpp.h"
 #include "Metadata.h"
 #include "TimeWindow.h"
+#include "global.h"
 using namespace std;
 using namespace SEISPP;
 #define MYZERO 1e-15
-const string evidkey("eventid");   // not evid to avoid collision
+//const string evidkey("eventid");   // not evid to avoid collision
 const string xcorcoekey("xcorcoe"); //x-correlation coefficience key.
 const string ensemblesortkey("ensemble_sortkey");
 const string killmethodkey("kill_by_method");
@@ -200,8 +201,8 @@ class TraceEditOperator
 		//This is useful when the members don't share the same length.
 		TimeWindow find_common_timewindow(TimeSeriesEnsemble& tse);
 		TimeWindow find_common_timewindow(ThreeComponentEnsemble& tse);
-		//find false traces and returns the evid list of those traces.
-		//it can be used after trace editing to extract killed traces (evid list).
+		//find false traces and returns the traceid list of those traces.
+		//it can be used after trace editing to extract killed traces (trid list).
 		set<long> find_false_traces(TimeSeriesEnsemble& tse);
 		bool compute_trace_xcorcoe(TimeSeriesEnsemble& tse, 
 					int ref_evid, TimeWindow xcor_twin);
@@ -274,8 +275,9 @@ class TraceEditOperator
 		members of tse passed to this function with matching evid.  
 		In this code this is called to the complement of radial or transverse
 		depending on which was being edited. */
-		void apply_kills(TimeSeriesEnsemble& tse, set<long> evids_to_kill);
-		void apply_kills(ThreeComponentEnsemble& tce, set<long> evids_to_kill);
+		//change to use traceid instead of eventid. Xiaotao Yang on April 30, 2019
+		void apply_kills(TimeSeriesEnsemble& tse, set<long> traceids_to_kill);
+		void apply_kills(ThreeComponentEnsemble& tce, set<long> traceids_to_kill);
 		TimeSeriesEnsemble reorder_ensemble(TimeSeriesEnsemble& t,vector<int> ordering);
 		/*
 		// Kill traces with extremely large amplitude phases 

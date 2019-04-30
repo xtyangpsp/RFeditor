@@ -17,6 +17,7 @@
 #include "TraceEditPlot.h"
 #include "TraceEditOperator.h"
 #include "filter++.h"
+#include "global.h"
 
 using namespace std;
 using namespace SEISPP;
@@ -132,14 +133,19 @@ void history_current()
 	<<" (1) Moved File menu building function to TraceEditPlot"<<endl
 	<<" (2) Added options to save traces of multiple types: Robust stack, simple stack, all traces."<<endl
 	<<" (3) Added trace metadata version=3 to save back_azimuth."<<endl
+<<">> 4/30/2019 XT Yang"<<endl
+	<<" (1) debug saving after applying kills. The old ideas used eventid to mark killed traces. However, when there are "<<endl
+	<<"     duplicated eventids that will be treated as killed traces, resulting in very few or zero traces to save. To address"<<endl
+	<<" 	this issue, I am changing to use traceid as unique index for each trace, in addition to eventid. The unique traceid"<<endl
+	<<"		will be used to mark the killed traces."<<endl
 	<<endl;
 }
 
-const string csversion("v3.7.4");
+const string csversion("v3.7.5");
 
 void version()
 {
-	cerr <<"< version "<<csversion<<" > 7/22/2018"<<endl;
+	cerr <<"< version "<<csversion<<" > 4/30/2019"<<endl;
 }
 void author()
 {
@@ -203,41 +209,44 @@ bool SEISPP::SEISPP_verbose(false);
    */
 void set_eventids(TimeSeriesEnsemble& d)
 {
-    vector<TimeSeries>::iterator dptr;
-    int i,evid;
-    double t0test(0.0);
-    /* Start with evid 0 to match vector index when not sorted.
-       confusing otherwise */
-    for(evid=0,i=0,dptr=d.member.begin();dptr!=d.member.end();
-            ++i,++dptr)
-    { /*
-        cout << "Member number "<<i<< "Metadata contens"<<endl
-            << dynamic_cast<Metadata &>(*dptr)<<endl;
-            */
-        if(dptr->is_attribute_set((char *)"evid"))
-				dptr->put(evidkey,dptr->get_int("evid"));
-		else
-		{
-			if(i==0)
-			{	dptr->put(evidkey,evid);
-				t0test=dptr->t0;
-			}
+	try
+	{
+		vector<TimeSeries>::iterator dptr;
+		int i,evid;
+		double t0test(0.0);
+		/* Start with evid 0 to match vector index when not sorted.
+		   confusing otherwise */
+		for(evid=0,i=0,dptr=d.member.begin();dptr!=d.member.end();
+				++i,++dptr)
+		{ /*
+			cout << "Member number "<<i<< "Metadata contens"<<endl
+				<< dynamic_cast<Metadata &>(*dptr)<<endl;
+				*/
+			if(dptr->is_attribute_set((char *)"evid"))
+					dptr->put(evidkey,dptr->get_int("evid"));
 			else
-			{	/* elegantly obscure C syntax - test if t0 of this member
-				   is with dt 0 test value */
-				if(fabs(t0test-(dptr->t0))<dptr->dt)
-				{	dptr->put(evidkey,evid);}
-				else
-				{
-					++evid;
+			{
+				if(i==0)
+				{	dptr->put(evidkey,evid);
 					t0test=dptr->t0;
-					dptr->put(evidkey,evid);
+				}
+				else
+				{	/* elegantly obscure C syntax - test if t0 of this member
+					   is with dt 0 test value */
+					if(fabs(t0test-(dptr->t0))<dptr->dt)
+					{	dptr->put(evidkey,evid);}
+					else
+					{
+						++evid;
+						t0test=dptr->t0;
+						dptr->put(evidkey,evid);
+					}
 				}
 			}
+			//DEBUG
+			//cout << "Member number "<<i<<" assigned evid "<<evid<<endl;
 		}
-        //DEBUG
-        //cout << "Member number "<<i<<" assigned evid "<<evid<<endl;
-    }
+	}catch(...){throw;};
 }
 // Same functionality for ThreeComponentEnsemble object.
 void set_eventids(ThreeComponentEnsemble& d)
@@ -262,7 +271,41 @@ void set_eventids(ThreeComponentEnsemble& d)
 		}
 	}catch(...){throw;};
 }
+/*
+Set unique trace id for indexing purpose.
+*/
+void set_traceids(TimeSeriesEnsemble& d)
+{
+    try
+    {
+		vector<TimeSeries>::iterator dptr;
+		int trid(0);
 
+		for(trid=0,dptr=d.member.begin();dptr!=d.member.end();
+				++trid,++dptr)
+		{   
+			dptr->put(traceidkey,trid);
+		}
+	}catch(...){throw;};
+}
+// Same functionality for ThreeComponentEnsemble object.
+void set_traceids(ThreeComponentEnsemble& d)
+{
+    try
+    {
+		vector<ThreeComponentSeismogram>::iterator dptr3c;
+		int trid(0);
+
+		for(trid=0,dptr3c=d.member.begin();dptr3c!=d.member.end();
+				++trid,++dptr3c)
+		{
+			dptr3c->put(traceidkey,trid);
+			//DEBUG
+			if(MYDEBUGMODE)
+				cout<<"Set trid = "<<trid<<endl;
+		}
+	}catch(...){throw;};
+}
 /*
 // input d has to be the ensemble including only one channel, i.e.,
 // result by calling extract_by_chan(). Otherwise, this routine will
@@ -1981,6 +2024,7 @@ int main(int argc, char **argv)
 				   that should work for RF data */
 				if(SEISPP_verbose) cout<<"Setting event IDs ..."<<endl;
 				set_eventids(dall);
+				set_traceids(dall);
 				/* use start time as 0.  Also set moveout keyword
 				to allow stacking in engine */
 				//use user given data_start_time.
@@ -2092,6 +2136,7 @@ int main(int argc, char **argv)
 				   that should work for RF data */
 				if(SEISPP_verbose) cout<<"Setting event IDs ..."<<endl;
 				set_eventids(dall_3c);
+				set_traceids(dall_3c);
 				/* use start time as 0.  Also set moveout keyword
 				to allow stacking in engine */
 				vector<ThreeComponentSeismogram>::iterator im2;
@@ -2167,7 +2212,7 @@ int main(int argc, char **argv)
 			
 			tse_edit.put("chan",edit_chan_code);
 			
-            int j=set_duplicate_traces_to_false(tse_edit,SEISPP_verbose);
+            int j=set_duplicate_traces_to_false(tse_edit,MYDEBUGMODE);
             if(j>0 && SEISPP_verbose)
             	cout<<"Duplicate traces in "<<edit_on_channel<<" (set to false) = "<<j<<endl;
 
@@ -2184,7 +2229,7 @@ int main(int argc, char **argv)
             			//if(pre_edit_FA && !edit_on_radial) radial.member[i].live=false;
             		}
             }
-            set<long> evids_killed=teo.find_false_traces(tse_edit);
+            set<long> traceids_killed=teo.find_false_traces(tse_edit);
             //save original data before applying filters. Xiaotao Yang 1/22/2015
             if(SEISPP_verbose) cout<<"-- Excluding false traces ..."<<endl;
             /*
@@ -2306,12 +2351,12 @@ int main(int argc, char **argv)
 				=================================================================
 				*/
 				//find total number of killed traces.
-				set<long> evids_killed2;
-				evids_killed2=kills;
-// 				cout<<"killed traces: "<<evids_killed2.size()<<endl;
-				if(evids_killed2.size()>0)
-					evids_killed.insert(evids_killed2.begin(),evids_killed2.end());
-				cout<<"Found [ "<<evids_killed.size()<<" ] killed traces."<<endl;
+				set<long> traceids_killed2;
+				traceids_killed2=kills;
+// 				cout<<"killed traces: "<<traceids_killed2.size()<<endl;
+				if(traceids_killed2.size()>0)
+					traceids_killed.insert(traceids_killed2.begin(),traceids_killed2.end());
+				cout<<"Found [ "<<traceids_killed.size()<<" ] killed traces."<<endl;
 				if(review_mode) 
 				{
 					cout<<"Review mode is on. Go to the next without saving the edits!"<<endl;
@@ -2323,11 +2368,11 @@ int main(int argc, char **argv)
 					if(get_FA && post_edit_FA )
 					//compute FA and write them out into a text file.
 					{
-						if(evids_killed.size()>0)
+						if(traceids_killed.size()>0)
 						{
 							if(SEISPP_verbose) cout<<"Getting FA: Applying kills to "
 							<<edit_on_channel<<endl;
-							teo.apply_kills(tse_edit,evids_killed);
+							teo.apply_kills(tse_edit,traceids_killed);
 						}
 						TimeSeriesEnsemble tse_tmp=teo.exclude_false_traces(tse_edit);
 						if(SEISPP_verbose) 
@@ -2380,7 +2425,7 @@ int main(int argc, char **argv)
 					{
 						if(SEISPP_verbose) 
 							cout <<"Applying kills to 3C data ... "<<endl;
-						teo.apply_kills(dall_3c, evids_killed);
+						teo.apply_kills(dall_3c, traceids_killed);
 						vector<ThreeComponentSeismogram>::iterator im2;
 						if(apply_prefilter)
 						{
@@ -2439,20 +2484,20 @@ int main(int argc, char **argv)
 								//radial=radial0;
 								//transverse=transverse0;
 								// apply kills. moved from RFeditorEngine.cc to this place. Xiaotao Yang
-								if(evids_killed.size()>0)
+								if(traceids_killed.size()>0)
 								{
 									//debug
 									if(SEISPP_verbose) cout<<"Applying kills to radial."<<endl;
 									//cout<<"rkill size: "<<rkills.size()<<endl;
-									teo.apply_kills(radial,evids_killed);
+									teo.apply_kills(radial,traceids_killed);
 									
 									if(SEISPP_verbose) cout<<"Applying kills to transverse."<<endl;
-									teo.apply_kills(transverse,evids_killed);
+									teo.apply_kills(transverse,traceids_killed);
 									//kill vertical if turned on "save vertical channel"
 									if(save_vertical_channel)
 									{
 										if(SEISPP_verbose) cout<<"Applying kills to vertical ..."<<endl;
-										teo.apply_kills(vertical,evids_killed);
+										teo.apply_kills(vertical,traceids_killed);
 									}
 								}
 							}
@@ -2473,41 +2518,41 @@ int main(int argc, char **argv)
 									teo.convolve_ensemble(wavelet,vertical,true,&twin);
 									teo.convolve_ensemble(wavelet,transverse,true,&twin);
 								}
-								if(evids_killed.size()>0)
+								if(traceids_killed.size()>0)
 								{
 									//debug
 									//radial=radial0;
 									if(SEISPP_verbose) cout<<"Applying kills to radial."<<endl;
 									//cout<<"rkill size: "<<rkills.size()<<endl;
-									teo.apply_kills(radial,evids_killed);
+									teo.apply_kills(radial,traceids_killed);
 									
 									if(SEISPP_verbose) cout<<"Applying kills to transverse."<<endl;
-									teo.apply_kills(transverse,evids_killed);
+									teo.apply_kills(transverse,traceids_killed);
 									//kill vertical if turned on "save vertical channel"
 									if(save_vertical_channel)
 									{
 										if(SEISPP_verbose) cout<<"Applying kills to vertical ..."<<endl;
-										teo.apply_kills(vertical,evids_killed);
+										teo.apply_kills(vertical,traceids_killed);
 									}
 								}
 							}
 						}
 						else
 						{	
-							if(evids_killed.size()>0)
+							if(traceids_killed.size()>0)
 								{
 									//debug
 									if(SEISPP_verbose) cout<<"Applying kills to radial."<<endl;
 									//cout<<"rkill size: "<<rkills.size()<<endl;
-									teo.apply_kills(radial,evids_killed);
+									teo.apply_kills(radial,traceids_killed);
 									
 									if(SEISPP_verbose) cout<<"Applying kills to transverse."<<endl;
-									teo.apply_kills(transverse,evids_killed);
+									teo.apply_kills(transverse,traceids_killed);
 									//kill vertical if turned on "save vertical channel"
 									if(save_vertical_channel)
 									{
 										if(SEISPP_verbose) cout<<"Applying kills to vertical ..."<<endl;
-										teo.apply_kills(vertical,evids_killed);
+										teo.apply_kills(vertical,traceids_killed);
 									}
 								}
 						}
@@ -2604,11 +2649,11 @@ int main(int argc, char **argv)
 					logfile << "Saved "<<nsaved<<" RFs for station "<<sta<<endl;
 					if(SEISPP_verbose) cout << "Saved "<<nsaved<<" RFs for station "<<sta<<endl;
 				}
-				evids_killed2.clear();
+				traceids_killed2.clear();
 				kills.clear(); 
             }
 			//clear set containers.
-			evids_killed.clear();   
+			traceids_killed.clear();   
 			dall_3c.member.clear();    
         }
         radial.member.clear();

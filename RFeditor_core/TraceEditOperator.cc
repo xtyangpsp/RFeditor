@@ -3,7 +3,6 @@
 #include <vector>
 #include "perf.h"
 #include "TraceEditOperator.h"
-bool MYDEBUGMODE(true); // when true, the program will output some values for checking purpose.
 using namespace std;
 using namespace SEISPP;
    //1e-10.
@@ -1197,23 +1196,23 @@ double find_max_abs_amplitude(TimeSeriesEnsemble& tse)
     }catch(...){throw;};
 }
 
-//find false traces and returns the evid list of those traces.
+//find false traces and returns the traceid list of those traces.
 set<long> TraceEditOperator::find_false_traces(TimeSeriesEnsemble& tse)
 {
 	try
 	{
-		long evid=-1;
-		set<long> evids_killed;
+		long trid=-99;
+		set<long> traceids_killed;
 		vector<TimeSeries>::iterator iptr;
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
 		{
 			if(!iptr->live )
 			{
-				evid=iptr->get_long(evidkey);
-				evids_killed.insert(evid);
+				trid=iptr->get_long(traceidkey); //evid=iptr->get_long(evidkey);
+				traceids_killed.insert(trid);
 			}
 		}
-		return(evids_killed);
+		return(traceids_killed);
 	}catch(...){throw;};
 }
 TimeWindow TraceEditOperator::find_common_timewindow(TimeSeriesEnsemble& tse)
@@ -2446,11 +2445,12 @@ set of event ids returned by apply_edits and uses them to kill any
 members of tse passed to this function with matching evid.  
 In this code this is called to the complement of radial or transverse
 depending on which was being edited. */
-void TraceEditOperator::apply_kills(TimeSeriesEnsemble& tse, set<long> evids_to_kill)
+//change to use traceid instead of eventid. Xiaotao Yang on April 30, 2019
+void TraceEditOperator::apply_kills(TimeSeriesEnsemble& tse, set<long> traceids_to_kill)
 {
     try {
         vector<TimeSeries>::iterator tptr;
-        int i,numkill=0,evid_tmp=-1;
+        int i,numkill=0,trid_tmp=-1;
         for(tptr=tse.member.begin();tptr!=tse.member.end();++tptr)
         {
             if(tptr->live)
@@ -2458,15 +2458,15 @@ void TraceEditOperator::apply_kills(TimeSeriesEnsemble& tse, set<long> evids_to_
 				// Skip stack trace when present 
 				//string sta=tptr->get_string("sta");
 				//if(sta==stackstaname) continue;
-				int evid=tptr->get_long(evidkey);
-				if(evid==evid_tmp) cout<<"duplicate evid: "<<evid<<endl;
-				if(evids_to_kill.find(evid)!=evids_to_kill.end())
+				int trid=tptr->get_long(traceidkey);
+				if(trid==trid_tmp) cout<<"duplicate evid: "<<trid<<endl;
+				if(traceids_to_kill.find(trid)!=traceids_to_kill.end())
 				{
 					//cout << "Transverse killing evid "<<evid<<endl;
 					tptr->live=false;
 					++numkill;
 				}
-				evid_tmp=evid;
+				trid_tmp=trid;
             }
         }
         //DEBUG
@@ -2475,33 +2475,34 @@ void TraceEditOperator::apply_kills(TimeSeriesEnsemble& tse, set<long> evids_to_
         //cout<<"Number of kills applied in apply_kills_to_other: "<<numkill<<endl;
     }catch(...){throw;};
 }
-void TraceEditOperator::apply_kills(ThreeComponentEnsemble& tce, set<long> evids_to_kill)
+//change to use traceid instead of eventid. Xiaotao Yang on April 30, 2019
+void TraceEditOperator::apply_kills(ThreeComponentEnsemble& tce, set<long> traceids_to_kill)
 {
     try {
         vector<ThreeComponentSeismogram>::iterator tptr;
-        int i,numkill=0,evid_tmp=-1;
+        int i,numkill=0,trid_tmp=-1;
         for(tptr=tce.member.begin();tptr!=tce.member.end();++tptr)
         {
             if(tptr->live)
             {
 				// Skip stack trace when present 
 // 				string sta=tptr->get_string("sta");
-				int evid=tptr->get_long(evidkey);
-				if(evid==evid_tmp) cout<<"duplicate evid: "<<evid<<endl;
-				if(evids_to_kill.find(evid)!=evids_to_kill.end())
+				int trid=tptr->get_long(traceidkey);
+				if(trid==trid_tmp) cout<<"duplicate evid: "<<trid<<endl;
+				if(traceids_to_kill.find(trid)!=traceids_to_kill.end())
 				{
 					//cout << "Transverse killing evid "<<evid<<endl;
 					tptr->live=false;
 					++numkill;
 				}
-				evid_tmp=evid;
+				trid_tmp=trid;
             }
         }
         //DEBUG
         if(MYDEBUGMODE)
         {
 			cout<<"Number of traces in input data: "<<tce.member.size()<<endl;
-			cout<<"size of evids_to_kill in apply_kills: "<<evids_to_kill.size()<<endl;
+			cout<<"size of traceids_to_kill in apply_kills: "<<traceids_to_kill.size()<<endl;
 			cout<<"Number of kills applied in apply_kills: "<<numkill<<endl;
         }
     }catch(...){throw;};
@@ -2609,8 +2610,8 @@ set<long> TraceEditOperator::kill_large_amplitude_traces(TimeSeriesEnsemble& tse
 	{
 		double vmax(0.0),vmin(0.0);
 		int numkills;
-		set<long> evids_to_kill;
-		long evid;
+		set<long> traceids_to_kill;
+		long trid, evid;
 		vector<TimeSeries>::iterator iptr;
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
@@ -2624,8 +2625,8 @@ set<long> TraceEditOperator::kill_large_amplitude_traces(TimeSeriesEnsemble& tse
         		{
         			iptr->live=false;
         			iptr->put(killmethodkey,string(AUTOKILL_LargeAmpTraces));
-					evid=iptr->get_long(evidkey);
-					evids_to_kill.insert(evid);
+					trid=iptr->get_long(traceidkey);evid=iptr->get_long(evidkey);
+					traceids_to_kill.insert(trid);
 					//DEBUG
 					cout<<"Kill evid = "<<evid<<" with max abs amplitude = "
 						<<vmax<<endl;
@@ -2637,9 +2638,9 @@ set<long> TraceEditOperator::kill_large_amplitude_traces(TimeSeriesEnsemble& tse
     	tes.station=tse.get_string("sta");
     	tes.method=AUTOKILL_LargeAmpTraces;
     	tes.TraceAmp_range[1]=Amp_max;
-    	tes.nkilled=evids_to_kill.size();
+    	tes.nkilled=traceids_to_kill.size();
     	statistics.push_back(tes);
-        return(evids_to_kill);
+        return(traceids_to_kill);
 	}catch(...){throw;};
 }
 
@@ -2655,9 +2656,9 @@ set<long> TraceEditOperator::kill_negative_FA_traces(TimeSeriesEnsemble& tse,
 	{
 		TraceEditStatistics tes;
 		double amplitude(0.0),FA_amplitude(0.0),FA_time(0.0);
-		long evid=-1, evid_tmp;
+		long evid=-1, trid=-99;
 		int numkills=0;
-		set<long> evids_to_kill;
+		set<long> traceids_to_kill;
 		vector<TimeSeries>::iterator iptr;
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
@@ -2673,18 +2674,18 @@ set<long> TraceEditOperator::kill_negative_FA_traces(TimeSeriesEnsemble& tse,
 				{
 					iptr->live=false;
 					iptr->put(killmethodkey,string(AUTOKILL_NegativeFA));
-					evid=iptr->get_long(evidkey);
-					evids_to_kill.insert(evid);
+					trid=iptr->get_long(traceidkey);//evid=iptr->get_long(evidkey);
+					traceids_to_kill.insert(trid);
 					++numkills;
 				}
         	}
     	}
     	tes.station=tse.get_string("sta");
     	tes.method=AUTOKILL_NegativeFA;
-    	tes.nkilled=evids_to_kill.size();
+    	tes.nkilled=traceids_to_kill.size();
     	statistics.push_back(tes);
         //cout<<"numkills:"<<numkills<<endl;
-		return(evids_to_kill);
+		return(traceids_to_kill);
 	}catch(...){throw;};
 }
 //Kill traces with negative first arrival
@@ -2695,9 +2696,9 @@ set<long> TraceEditOperator::kill_negative_FA_traces(
 	try 
 	{
 		double amplitude(0.0),FA_amplitude(0.0),FA_time(0.0);
-		long evid=-1, evid_tmp;
+		long evid=-1, trid=-99;
 		int numkills=0;
-		set<long> evids_to_kill;
+		set<long> traceids_to_kill;
 		vector<TimeSeries>::iterator iptr;
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
@@ -2731,8 +2732,8 @@ set<long> TraceEditOperator::kill_negative_FA_traces(
 				{
 					iptr->live=false;
 					iptr->put(killmethodkey,string(AUTOKILL_NegativeFA));
-					evid=iptr->get_long(evidkey);
-					evids_to_kill.insert(evid);
+					trid=iptr->get_long(traceidkey);//evid=iptr->get_long(evidkey);
+					traceids_to_kill.insert(trid);
 					++numkills;
 				}
 				tmpts.s.clear();
@@ -2742,10 +2743,10 @@ set<long> TraceEditOperator::kill_negative_FA_traces(
     	tes.station=tse.get_string("sta");
     	tes.method=AUTOKILL_NegativeFA;
     	tes.FA_twin=FA_search_window;
-    	tes.nkilled=evids_to_kill.size();
+    	tes.nkilled=traceids_to_kill.size();
     	statistics.push_back(tes);
         //cout<<"numkills:"<<numkills<<endl;
-		return(evids_to_kill);
+		return(traceids_to_kill);
 	}catch(...){throw;};
 }
 //New algorithm: kill Negative Frist Arrivals, which
@@ -2758,9 +2759,9 @@ set<long> TraceEditOperator::kill_negative_FAs_traces(
 	try 
 	{
 		//double amplitude(0.0),FA_amplitude(0.0),FA_time(0.0);
-		long evid=-1, evid_tmp;
+		long evid=-1, trid=-99;
 		//int numkills=0;
-		set<long> evids_to_kill;
+		set<long> traceids_to_kill;
 		vector<TimeSeries>::iterator iptr;
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
         {
@@ -2779,8 +2780,8 @@ set<long> TraceEditOperator::kill_negative_FAs_traces(
 				{
 					iptr->live=false;
 					iptr->put(killmethodkey,string(AUTOKILL_NegativeFA));
-					evid=iptr->get_long(evidkey);
-					evids_to_kill.insert(evid);
+					trid=iptr->get_long(traceidkey);//evid=iptr->get_long(evidkey);
+					traceids_to_kill.insert(trid);
 					//++numkills;
 				}
 				tmpts.s.clear();
@@ -2790,10 +2791,10 @@ set<long> TraceEditOperator::kill_negative_FAs_traces(
     	tes.station=tse.get_string("sta");
     	tes.method=AUTOKILL_NegativeFA;
     	tes.FA_twin=NFA_tolerance_window;
-    	tes.nkilled=evids_to_kill.size();
+    	tes.nkilled=traceids_to_kill.size();
     	statistics.push_back(tes);
         //cout<<"numkills:"<<numkills<<endl;
-		return(evids_to_kill);
+		return(traceids_to_kill);
 	}catch(...){throw;};
 }
 
@@ -2812,10 +2813,10 @@ set<long> TraceEditOperator::kill_small_FA_traces
 		const string error_base("ERROR in 'kill_small_FA_traces': ");
 		double amplitude(0.0);
 		double vmax(0.0),ratio(0.0), FA_amplitude(0.0),FA_time(0.0);
-		long evid;
+		long trid, evid;
 		int numkills(0),i;
 		bool local_normalization;
-		set<long> evids_to_kill;
+		set<long> traceids_to_kill;
 		//find global maximum FA values from all traces.
 		if(normalization_method==NORMALIZE_BY_GLOBAL_FA_MAX)
 			vmax=find_max_abs_FirstArrival(tse, FA_sensitivity,
@@ -2854,8 +2855,8 @@ set<long> TraceEditOperator::kill_small_FA_traces
 				if(FA_type.size()==0)
 				{
 					cerr<<error_base<<"skipped this procedure!"<<endl;
-					evids_to_kill.clear();
-					return(evids_to_kill);
+					traceids_to_kill.clear();
+					return(traceids_to_kill);
 				}
 				FA_time=tmpts.get_double(FA_time_key);
 				FA_amplitude=tmpts.get_double(FA_amplitude_key);
@@ -2868,8 +2869,8 @@ set<long> TraceEditOperator::kill_small_FA_traces
 				//cout<<"Normalized FA amplitude = "<<ratio<<endl;
 				if(fabs(ratio)<(Amp_min )) 
 				{
-					evid=iptr->get_long(evidkey);
-					evids_to_kill.insert(evid);
+					trid=iptr->get_long(traceidkey);evid=iptr->get_long(evidkey);
+					traceids_to_kill.insert(trid);
 					//cout<<"killing evid: "<<evid<<endl;
 					iptr->live=false;
 					iptr->put(killmethodkey,string(AUTOKILL_SmallFA));
@@ -2883,9 +2884,9 @@ set<long> TraceEditOperator::kill_small_FA_traces
     	tes.FA_twin=FA_search_window;
     	tes.FA_range[0]=Amp_min;
     	tes.AmpNormalizeMethod=normalization_method;
-    	tes.nkilled=evids_to_kill.size();
+    	tes.nkilled=traceids_to_kill.size();
     	statistics.push_back(tes);
-		return(evids_to_kill);
+		return(traceids_to_kill);
 	}catch(...){throw;};
 }
 
@@ -2905,9 +2906,9 @@ set<long> TraceEditOperator::kill_growing_PCoda_traces(TimeSeriesEnsemble& tse,
 		double tolerance=PCoda_grow_tolerance; 
 		double FA_amplitude(0.0),FA_time(0.0);;
 		double vmax(0.0),vmax_global(0.0);
-		long evid;
+		long trid, evid;
 		int numkills(0),i;
-		set<long> evids_to_kill;
+		set<long> traceids_to_kill;
 		
 		//DEBUG
 		//cerr<<"Pcoda tolerance: "<<tolerance<<endl;
@@ -2949,8 +2950,8 @@ set<long> TraceEditOperator::kill_growing_PCoda_traces(TimeSeriesEnsemble& tse,
 				
 				if((fabs(vmax)-fabs(FA_amplitude))/(vmax_global+MYZERO)>(tolerance )) 
 				{
-					evid=iptr->get_long(evidkey);
-					evids_to_kill.insert(evid);
+					trid=iptr->get_long(traceidkey);evid=iptr->get_long(evidkey);
+					traceids_to_kill.insert(trid);
 					//cout<<"killing evid: "<<evid<<endl;
 					iptr->live=false;
 					iptr->put(killmethodkey,string(AUTOKILL_GrowingPCoda));
@@ -2964,9 +2965,9 @@ set<long> TraceEditOperator::kill_growing_PCoda_traces(TimeSeriesEnsemble& tse,
     	tes.FA_twin=FA_search_window;
     	tes.PCoda_twin=PCoda_search_window;
     	tes.PCoda_grow_tolerance=tolerance;
-    	tes.nkilled=evids_to_kill.size();
+    	tes.nkilled=traceids_to_kill.size();
     	statistics.push_back(tes);
-		return(evids_to_kill);
+		return(traceids_to_kill);
 	}catch(...){throw;};
 }
 //Algorithm: max amplitude within the P-coda search window is greater than
@@ -2983,9 +2984,9 @@ set<long> TraceEditOperator::kill_growing_PCoda_traces(TimeSeriesEnsemble& tse,
 		//This is the normalized value allowing the P-Coda to grow.
 		double tolerance=PCoda_grow_tolerance; 
 		double vmax(0.0),vmax_coda(0.0),vmax_global(0.0);
-		long evid;
+		long trid, evid;
 		int numkills(0),i;
-		set<long> evids_to_kill;
+		set<long> traceids_to_kill;
 
 		vector<TimeSeries>::iterator iptr;
 		for(iptr=tse.member.begin();iptr!=tse.member.end();++iptr)
@@ -3019,8 +3020,8 @@ set<long> TraceEditOperator::kill_growing_PCoda_traces(TimeSeriesEnsemble& tse,
 				
 				if((fabs(vmax_coda)-fabs(vmax))/(vmax_global+MYZERO)>(tolerance )) 
 				{
-					evid=iptr->get_long(evidkey);
-					evids_to_kill.insert(evid);
+					trid=iptr->get_long(traceidkey);evid=iptr->get_long(evidkey);
+					traceids_to_kill.insert(trid);
 					//cout<<"killing evid: "<<evid<<endl;
 					iptr->live=false;
 					iptr->put(killmethodkey,string(AUTOKILL_GrowingPCoda));
@@ -3034,9 +3035,9 @@ set<long> TraceEditOperator::kill_growing_PCoda_traces(TimeSeriesEnsemble& tse,
     	//tes.FA_twin=FA_search_window;
     	tes.PCoda_twin=PCoda_search_window;
     	tes.PCoda_grow_tolerance=tolerance;
-    	tes.nkilled=evids_to_kill.size();
+    	tes.nkilled=traceids_to_kill.size();
     	statistics.push_back(tes);
-		return(evids_to_kill);
+		return(traceids_to_kill);
 	}catch(...){throw;};
 }
 //kill traces with P-Coda lacking zero points within the tolerance length of a timewindow.
@@ -3049,9 +3050,9 @@ set<long> TraceEditOperator::kill_ClusteredArrivals_traces(TimeSeriesEnsemble& t
 	{
 		const string error_base("ERROR in 'kill_ClusteredArrivals_traces': ");
 		double FA_amplitude(0.0),FA_time(0.0),tflag,vmax=0.0,fmin=1.0/(2.0*tlength);
-		long evid;
+		long trid, evid;
 		int numkills(0),i,nzp=0,tnsample;
-		set<long> evids_to_kill;
+		set<long> traceids_to_kill;
 		//tolerance number of samples.
 		tnsample=SEISPP::nint(tlength/tse.member[0].dt)+1;
 		//cerr<<"tnsample = "<<tnsample<<endl;
@@ -3085,8 +3086,8 @@ set<long> TraceEditOperator::kill_ClusteredArrivals_traces(TimeSeriesEnsemble& t
 					{
 						iptr->live=false;
 						iptr->put(killmethodkey,string(AUTOKILL_ClusteredArrivals));
-						evid=iptr->get_long(evidkey);
-						evids_to_kill.insert(evid);
+						trid=iptr->get_long(traceidkey);evid=iptr->get_long(evidkey);
+						traceids_to_kill.insert(trid);
 						++numkills;
 						break;
 					}
@@ -3101,9 +3102,9 @@ set<long> TraceEditOperator::kill_ClusteredArrivals_traces(TimeSeriesEnsemble& t
     	tes.method=AUTOKILL_ClusteredArrivals;
     	tes.CodaCA_twin=CodaCA_search_window;
     	tes.CodaCA_tolerance_twin_length=tlength;
-    	tes.nkilled=evids_to_kill.size();
+    	tes.nkilled=traceids_to_kill.size();
     	statistics.push_back(tes);
-		return(evids_to_kill);
+		return(traceids_to_kill);
 	}catch(...){throw;};
 }
 //kill low frequency Contaminated traces.
@@ -3121,14 +3122,14 @@ set<long> TraceEditOperator::kill_LowFrequencyContaminated_traces(TimeSeriesEnse
 	{
 		const string error_base("ERROR in 'kill_LowFrequencyContaminated_traces': ");
 		double vmax=0.0;
-		long evid;
+		long trid, evid;
 		int numkills(0),i;
-		set<long> evids_to_kill;
+		set<long> traceids_to_kill;
 		
 		cerr<<error_base<<"this procedure is blocked in the current version of RFeditor. Skipped!"<<endl;
 		
-		evids_to_kill.clear();
-		return(evids_to_kill);
+		traceids_to_kill.clear();
+		return(traceids_to_kill);
 		
 		/*
 		//tolerance number of samples.
@@ -3186,7 +3187,7 @@ set<long> TraceEditOperator::kill_LowFrequencyContaminated_traces(TimeSeriesEnse
             		//cout<<"vmax_f= "<<vmax_f<<", fmin required="<<fmin<<endl;
             		iptr->live=false;
 					iptr->put(killmethodkey,string(AUTOKILL_LowFrequencyContaminated));
-					evid=iptr->get_long(evidkey);
+					trid=iptr->get_long(traceidkey);evid=iptr->get_long(evidkey);
 					//debug
 					
 					//if(evid==1164)
@@ -3195,7 +3196,7 @@ set<long> TraceEditOperator::kill_LowFrequencyContaminated_traces(TimeSeriesEnse
 						//	gsl_histogram_increment (h, fft_tmp[k]);
 					//	{	cout<<k*df<<"    "<<fabs(fft_tmp[k])<<endl;}
 					//}
-					evids_to_kill.insert(evid);
+					traceids_to_kill.insert(trid);
 					++numkills;
 					
             	}
@@ -3210,9 +3211,9 @@ set<long> TraceEditOperator::kill_LowFrequencyContaminated_traces(TimeSeriesEnse
     	tes.method=AUTOKILL_LowFrequencyContaminated;
     	tes.LowFrequency_range[0]=lf_min;
     	tes.LowFrequency_range[1]=lf_max;
-    	tes.nkilled=evids_to_kill.size();
+    	tes.nkilled=traceids_to_kill.size();
     	statistics.push_back(tes);
-		return(evids_to_kill);
+		return(traceids_to_kill);
 		*/
 	}catch(...){throw;};
 	
@@ -3228,33 +3229,33 @@ set<long> TraceEditOperator::kill_by_decon_ALL(TimeSeriesEnsemble& tse,
 									double averamp_min,double averamp_max,
 									double rawsnr_min,double rawsnr_max)
 {
-	set<long> evids_to_kill, kill_tmp;
+	set<long> traceids_to_kill, kill_tmp;
 	try
 	{
 		//
-		evids_to_kill=kill_by_decon_niteration(tse,niteration_min,niteration_max);
+		traceids_to_kill=kill_by_decon_niteration(tse,niteration_min,niteration_max);
 		//
 		kill_tmp=kill_by_decon_nspike(tse,nspike_min,nspike_max);
-		if(kill_tmp.size()>0) evids_to_kill.insert(kill_tmp.begin(),kill_tmp.end());
+		if(kill_tmp.size()>0) traceids_to_kill.insert(kill_tmp.begin(),kill_tmp.end());
 		//
 		kill_tmp=kill_by_decon_epsilon(tse,epsilon_min,epsilon_max);
-		if(kill_tmp.size()>0) evids_to_kill.insert(kill_tmp.begin(),kill_tmp.end());
+		if(kill_tmp.size()>0) traceids_to_kill.insert(kill_tmp.begin(),kill_tmp.end());
 		//
 		kill_tmp=kill_by_decon_peakamp(tse,peakamp_min,peakamp_max);
-		if(kill_tmp.size()>0) evids_to_kill.insert(kill_tmp.begin(),kill_tmp.end());
+		if(kill_tmp.size()>0) traceids_to_kill.insert(kill_tmp.begin(),kill_tmp.end());
 		//
 		kill_tmp=kill_by_decon_averamp(tse,averamp_min,averamp_max);
-		if(kill_tmp.size()>0) evids_to_kill.insert(kill_tmp.begin(),kill_tmp.end());
+		if(kill_tmp.size()>0) traceids_to_kill.insert(kill_tmp.begin(),kill_tmp.end());
 		//
 		kill_tmp=kill_by_decon_rawsnr(tse,rawsnr_min,rawsnr_max);
-		if(kill_tmp.size()>0) evids_to_kill.insert(kill_tmp.begin(),kill_tmp.end());
+		if(kill_tmp.size()>0) traceids_to_kill.insert(kill_tmp.begin(),kill_tmp.end());
 	}catch(...){throw;};
-	return(evids_to_kill);
+	return(traceids_to_kill);
 }
 set<long> TraceEditOperator::kill_by_decon_niteration(TimeSeriesEnsemble& tse,
 									int niteration_min,int niteration_max)
 {
-	set<long> evids_to_kill;
+	set<long> traceids_to_kill;
 	try
 	{
 		//cerr<<"kill_by_decon_niteration"<<endl;
@@ -3269,7 +3270,7 @@ set<long> TraceEditOperator::kill_by_decon_niteration(TimeSeriesEnsemble& tse,
             	{
             		iptr->live=false;
             		iptr->put(killmethodkey,string(AUTOKILL_DeconNiteration));
-            		evids_to_kill.insert(iptr->get_long(evidkey));
+            		traceids_to_kill.insert(iptr->get_long(traceidkey));
             	}
             }
         }
@@ -3280,14 +3281,14 @@ set<long> TraceEditOperator::kill_by_decon_niteration(TimeSeriesEnsemble& tse,
 	tes.method=AUTOKILL_DeconNiteration;
 	tes.DeconNiteration_range[0]=niteration_min;
 	tes.DeconNiteration_range[1]=niteration_max;
-	tes.nkilled=evids_to_kill.size();
+	tes.nkilled=traceids_to_kill.size();
 	statistics.push_back(tes);
-	return(evids_to_kill);
+	return(traceids_to_kill);
 }
 set<long> TraceEditOperator::kill_by_decon_nspike(TimeSeriesEnsemble& tse,
 									int nspike_min,int nspike_max)
 {
-	set<long> evids_to_kill;
+	set<long> traceids_to_kill;
 	try
 	{
 		//cerr<<"kill_by_decon_nspike"<<endl;
@@ -3302,7 +3303,7 @@ set<long> TraceEditOperator::kill_by_decon_nspike(TimeSeriesEnsemble& tse,
             	{
             		iptr->live=false;
             		iptr->put(killmethodkey,string(AUTOKILL_DeconNspike));
-            		evids_to_kill.insert(iptr->get_long(evidkey));
+            		traceids_to_kill.insert(iptr->get_long(traceidkey));
             	}
             }
         }
@@ -3316,14 +3317,14 @@ set<long> TraceEditOperator::kill_by_decon_nspike(TimeSeriesEnsemble& tse,
 	tes.method=AUTOKILL_DeconNspike;
 	tes.DeconNspike_range[0]=nspike_min;
 	tes.DeconNspike_range[1]=nspike_max;
-	tes.nkilled=evids_to_kill.size();
+	tes.nkilled=traceids_to_kill.size();
 	statistics.push_back(tes);
-	return(evids_to_kill);
+	return(traceids_to_kill);
 }
 set<long> TraceEditOperator::kill_by_decon_epsilon(TimeSeriesEnsemble& tse,
 									double epsilon_min,double epsilon_max)
 {
-	set<long> evids_to_kill;
+	set<long> traceids_to_kill;
 	try
 	{
 		//cerr<<"kill_by_decon_epsilon"<<endl;
@@ -3338,7 +3339,7 @@ set<long> TraceEditOperator::kill_by_decon_epsilon(TimeSeriesEnsemble& tse,
             	{
             		iptr->live=false;
             		iptr->put(killmethodkey,string(AUTOKILL_DeconEpsilon));
-            		evids_to_kill.insert(iptr->get_long(evidkey));
+            		traceids_to_kill.insert(iptr->get_long(traceidkey));
             	}
             }
         }
@@ -3352,15 +3353,15 @@ set<long> TraceEditOperator::kill_by_decon_epsilon(TimeSeriesEnsemble& tse,
 	tes.method=AUTOKILL_DeconEpsilon;
 	tes.DeconEpsilon_range[0]=epsilon_min;
 	tes.DeconEpsilon_range[1]=epsilon_max;
-	tes.nkilled=evids_to_kill.size();
+	tes.nkilled=traceids_to_kill.size();
 	statistics.push_back(tes);
-	return(evids_to_kill);
+	return(traceids_to_kill);
 }
 
 set<long> TraceEditOperator::kill_by_decon_peakamp(TimeSeriesEnsemble& tse,
 									double peakamp_min,double peakamp_max)
 {
-	set<long> evids_to_kill;
+	set<long> traceids_to_kill;
 	try
 	{
 		//cerr<<"kill_by_decon_peakamp"<<endl;
@@ -3375,7 +3376,7 @@ set<long> TraceEditOperator::kill_by_decon_peakamp(TimeSeriesEnsemble& tse,
             	{
             		iptr->live=false;
             		iptr->put(killmethodkey,string(AUTOKILL_DeconPeakamp));
-            		evids_to_kill.insert(iptr->get_long(evidkey));
+            		traceids_to_kill.insert(iptr->get_long(traceidkey));
             	}
             }
         }
@@ -3389,14 +3390,14 @@ set<long> TraceEditOperator::kill_by_decon_peakamp(TimeSeriesEnsemble& tse,
 	tes.method=AUTOKILL_DeconPeakamp;
 	tes.DeconPeakamp_range[0]=peakamp_min;
 	tes.DeconPeakamp_range[1]=peakamp_max;
-	tes.nkilled=evids_to_kill.size();
+	tes.nkilled=traceids_to_kill.size();
 	statistics.push_back(tes);
-	return(evids_to_kill);
+	return(traceids_to_kill);
 }
 set<long> TraceEditOperator::kill_by_decon_averamp(TimeSeriesEnsemble& tse,
 									double averamp_min,double averamp_max)
 {
-	set<long> evids_to_kill;
+	set<long> traceids_to_kill;
 	try
 	{
 		//cerr<<"kill_by_decon_averamp"<<endl;
@@ -3411,7 +3412,7 @@ set<long> TraceEditOperator::kill_by_decon_averamp(TimeSeriesEnsemble& tse,
             	{
             		iptr->live=false;
             		iptr->put(killmethodkey,string(AUTOKILL_DeconAveramp));
-            		evids_to_kill.insert(iptr->get_long(evidkey));
+            		traceids_to_kill.insert(iptr->get_long(traceidkey));
             	}
             }
         }
@@ -3425,14 +3426,14 @@ set<long> TraceEditOperator::kill_by_decon_averamp(TimeSeriesEnsemble& tse,
 	tes.method=AUTOKILL_DeconAveramp;
 	tes.DeconAveramp_range[0]=averamp_min;
 	tes.DeconAveramp_range[1]=averamp_max;
-	tes.nkilled=evids_to_kill.size();
+	tes.nkilled=traceids_to_kill.size();
 	statistics.push_back(tes);
-	return(evids_to_kill);
+	return(traceids_to_kill);
 }
 set<long> TraceEditOperator::kill_by_decon_rawsnr(TimeSeriesEnsemble& tse,
 									double rawsnr_min,double rawsnr_max)
 {
-	set<long> evids_to_kill;
+	set<long> traceids_to_kill;
 	try
 	{
 		//cerr<<"kill_by_decon_rawsnr"<<endl;
@@ -3447,7 +3448,7 @@ set<long> TraceEditOperator::kill_by_decon_rawsnr(TimeSeriesEnsemble& tse,
             	{
             		iptr->live=false;
             		iptr->put(killmethodkey,string(AUTOKILL_DeconRawsnr));
-            		evids_to_kill.insert(iptr->get_long(evidkey));
+            		traceids_to_kill.insert(iptr->get_long(traceidkey));
             	}
             }
         }
@@ -3461,9 +3462,9 @@ set<long> TraceEditOperator::kill_by_decon_rawsnr(TimeSeriesEnsemble& tse,
 	tes.method=AUTOKILL_DeconRawsnr;
 	tes.DeconRawsnr_range[0]=rawsnr_min;
 	tes.DeconRawsnr_range[1]=rawsnr_max;
-	tes.nkilled=evids_to_kill.size();
+	tes.nkilled=traceids_to_kill.size();
 	statistics.push_back(tes);
-	return evids_to_kill;
+	return traceids_to_kill;
 }
 
 //kill by setting minimum stackweight.
@@ -3471,11 +3472,11 @@ set<long> TraceEditOperator::kill_low_stackweight_traces(
 				TimeSeriesEnsemble& tse,double sw_min)
 {
 	const string error_base("ERROR in TraceEditOperator::kill_low_stackweight_traces.");
-	set<long> evids_to_kill;
+	set<long> traceids_to_kill;
 	double swtmp;
 	try 
 	{
-		long evid;
+		long trid, evid;
 		int numkills(0),i;		
 		//DEBUG
 		vector<TimeSeries>::iterator iptr;
@@ -3487,8 +3488,8 @@ set<long> TraceEditOperator::kill_low_stackweight_traces(
 				//cerr<<swtmp<<endl;
 				if(swtmp < (sw_min)) 
 				{
-					evid=iptr->get_long(evidkey);
-					evids_to_kill.insert(evid);
+					trid=iptr->get_long(traceidkey);evid=iptr->get_long(evidkey);
+					traceids_to_kill.insert(trid);
 					//cout<<"killing evid: "<<evid<<endl;
 					iptr->live=false;
 					iptr->put(killmethodkey,string(AUTOKILL_StackWeightCutoff));
@@ -3504,11 +3505,11 @@ set<long> TraceEditOperator::kill_low_stackweight_traces(
 	tes.station=tse.get_string("sta");
 	tes.method=AUTOKILL_StackWeightCutoff;
 	tes.StackW_min=sw_min;
-	tes.nkilled=evids_to_kill.size();
+	tes.nkilled=traceids_to_kill.size();
 	//DEBUG
 	//cout<<tes.nkilled<<endl;
 	statistics.push_back(tes);
-	return(evids_to_kill);
+	return(traceids_to_kill);
 }
 
 //kill by setting minimum dsi.
@@ -3516,11 +3517,11 @@ set<long> TraceEditOperator::kill_low_dsi_traces(
 				TimeSeriesEnsemble& tse,double dsi_min)
 {
 	const string error_base("ERROR in TraceEditOperator::kill_low_dsi_traces.");
-	set<long> evids_to_kill;
+	set<long> traceids_to_kill;
 	double dsitmp;
 	try 
 	{
-		long evid;
+		long trid, evid;
 		int numkills(0),i;	
 		this->compute_decon_success_index(tse);
 		//DEBUG
@@ -3533,8 +3534,8 @@ set<long> TraceEditOperator::kill_low_dsi_traces(
 				//cerr<<swtmp<<endl;
 				if(dsitmp < (dsi_min)) 
 				{
-					evid=iptr->get_long(evidkey);
-					evids_to_kill.insert(evid);
+					trid=iptr->get_long(traceidkey);evid=iptr->get_long(evidkey);
+					traceids_to_kill.insert(trid);
 					//cout<<"killing evid: "<<evid<<endl;
 					iptr->live=false;
 					iptr->put(killmethodkey,string(AUTOKILL_DSICutoff));
@@ -3550,9 +3551,9 @@ set<long> TraceEditOperator::kill_low_dsi_traces(
 	tes.station=tse.get_string("sta");
 	tes.method=AUTOKILL_DSICutoff;
 	tes.DSI_min=dsi_min;
-	tes.nkilled=evids_to_kill.size();
+	tes.nkilled=traceids_to_kill.size();
 	statistics.push_back(tes);
-	return(evids_to_kill);
+	return(traceids_to_kill);
 }
 
 //kill by setting minimum correlation coefficience with reference trace.
@@ -3560,10 +3561,10 @@ set<long> TraceEditOperator::kill_low_ref_correlation_traces(
 				TimeSeriesEnsemble& tse,double xcorcoe_min)
 {
 	const string error_base("ERROR in TraceEditOperator::kill_low_ref_correlation_traces.");
-	set<long> evids_to_kill;
+	set<long> traceids_to_kill;
 	try 
 	{
-		long evid;
+		long trid, evid;
 		int numkills(0),i;
 		//DEBUG
 		vector<TimeSeries>::iterator iptr;
@@ -3574,8 +3575,8 @@ set<long> TraceEditOperator::kill_low_ref_correlation_traces(
 				if(iptr->is_attribute_set(xcorcoekey))
 				{	if(iptr->get_double(xcorcoekey) < xcorcoe_min) 
 					{
-						evid=iptr->get_long(evidkey);
-						evids_to_kill.insert(evid);
+						trid=iptr->get_long(traceidkey);evid=iptr->get_long(evidkey);
+						traceids_to_kill.insert(trid);
 						//cout<<"killing evid: "<<evid<<endl;
 						iptr->live=false;
 						iptr->put(killmethodkey,string(AUTOKILL_RefXcorCutoff));
@@ -3596,25 +3597,25 @@ set<long> TraceEditOperator::kill_low_ref_correlation_traces(
 	tes.station=tse.get_string("sta");
 	tes.method=AUTOKILL_RefXcorCutoff;
 	tes.RefXcor_min=xcorcoe_min;
-	tes.nkilled=evids_to_kill.size();
+	tes.nkilled=traceids_to_kill.size();
 	statistics.push_back(tes);
-	return(evids_to_kill);
+	return(traceids_to_kill);
 }
 set<long> TraceEditOperator::kill_low_ref_correlation_traces(
 					TimeSeriesEnsemble& tse,int ref_evid, 
 					TimeWindow xcor_twin,double xcorcoe_min)
 {
 	const string error_base("ERROR in TraceEditOperator::kill_low_ref_correlation_traces. ");
-	set<long> evids_to_kill;
+	set<long> traceids_to_kill;
 	try 
 	{
-		long evid;
+		long trid, evid;
 		int numkills(0),i;
 		//set xcorcoef before running killing procedure.
 		if(!this->compute_trace_xcorcoe(tse,ref_evid,xcor_twin))
 		{
 			cerr<<error_base<<"Can't compute trace xcorcoe."<<endl;
-			return evids_to_kill;
+			return traceids_to_kill;
 		};
 		
 		//DEBUG
@@ -3626,8 +3627,8 @@ set<long> TraceEditOperator::kill_low_ref_correlation_traces(
 				if(iptr->is_attribute_set(xcorcoekey))
 				{	if(iptr->get_double(xcorcoekey) < xcorcoe_min) 
 					{
-						evid=iptr->get_long(evidkey);
-						evids_to_kill.insert(evid);
+						trid=iptr->get_long(traceidkey);evid=iptr->get_long(evidkey);
+						traceids_to_kill.insert(trid);
 						//cout<<"killing evid: "<<evid<<endl;
 						iptr->live=false;
 						iptr->put(killmethodkey,string(AUTOKILL_RefXcorCutoff));
@@ -3652,25 +3653,25 @@ set<long> TraceEditOperator::kill_low_ref_correlation_traces(
 	tes.XCor_twin=xcor_twin;
 	tes.ref_trace_tag=ss.str();
 	tes.RefXcor_min=xcorcoe_min;
-	tes.nkilled=evids_to_kill.size();
+	tes.nkilled=traceids_to_kill.size();
 	statistics.push_back(tes);
-	return(evids_to_kill);
+	return(traceids_to_kill);
 }
 set<long> TraceEditOperator::kill_low_ref_correlation_traces(
 					TimeSeriesEnsemble& tse,TimeSeries ref_trace, 
 					TimeWindow xcor_twin,double xcorcoe_min)
 {
 	const string error_base("ERROR in TraceEditOperator::kill_low_ref_correlation_traces.");
-	set<long> evids_to_kill;
+	set<long> traceids_to_kill;
 	try 
 	{
-		long evid;
+		long trid, evid;
 		int numkills(0),i;
 		//set xcorcoef before running killing procedure.
 		if(!this->compute_trace_xcorcoe(tse,ref_trace,xcor_twin))
 		{
 			cerr<<error_base<<"Can't compute trace xcorcoe."<<endl;
-			return evids_to_kill;
+			return traceids_to_kill;
 		};		
 		//DEBUG
 		vector<TimeSeries>::iterator iptr;
@@ -3681,8 +3682,8 @@ set<long> TraceEditOperator::kill_low_ref_correlation_traces(
 				if(iptr->is_attribute_set(xcorcoekey))
 				{	if(iptr->get_double(xcorcoekey) < xcorcoe_min ) 
 					{
-						evid=iptr->get_long(evidkey);
-						evids_to_kill.insert(evid);
+						trid=iptr->get_long(traceidkey);evid=iptr->get_long(evidkey);
+						traceids_to_kill.insert(trid);
 						//cout<<"killing evid: "<<evid<<endl;
 						iptr->live=false;
 						iptr->put(killmethodkey,string(AUTOKILL_RefXcorCutoff));
@@ -3711,9 +3712,9 @@ set<long> TraceEditOperator::kill_low_ref_correlation_traces(
 	tes.XCor_twin=xcor_twin;
 	tes.ref_trace_tag=ref_trace_tag;
 	tes.RefXcor_min=xcorcoe_min;
-	tes.nkilled=evids_to_kill.size();
+	tes.nkilled=traceids_to_kill.size();
 	statistics.push_back(tes);
-	return(evids_to_kill);
+	return(traceids_to_kill);
 }
 set<long> TraceEditOperator::kill_low_RFQualityIndex_traces(
 					TimeSeriesEnsemble& tse,
@@ -3721,16 +3722,16 @@ set<long> TraceEditOperator::kill_low_RFQualityIndex_traces(
 					double qi_min,bool normalize)
 {
 	const string error_base("ERROR in TraceEditOperator::kill_low_RFQualityIndex_traces.");
-	set<long> evids_to_kill;
+	set<long> traceids_to_kill;
 	try 
 	{
-		long evid;
+		long trid, evid;
 		int numkills(0),i;
 		//compute RF Quality Index before running killing procedure.
 		if(!this->compute_RF_quality_index(tse,a1,a2,a3,normalize))
 		{
 			cerr<<error_base<<"failed to compute RF Quality Index."<<endl;
-			return evids_to_kill;
+			return traceids_to_kill;
 		};		
 		//DEBUG
 		vector<TimeSeries>::iterator iptr;
@@ -3741,8 +3742,8 @@ set<long> TraceEditOperator::kill_low_RFQualityIndex_traces(
 				if(iptr->is_attribute_set(RF_quality_index_key))
 				{	if(iptr->get_double(RF_quality_index_key) < qi_min) 
 					{
-						evid=iptr->get_long(evidkey);
-						evids_to_kill.insert(evid);
+						trid=iptr->get_long(traceidkey);evid=iptr->get_long(evidkey);
+						traceids_to_kill.insert(trid);
 						//cout<<"killing evid: "<<evid<<endl;
 						iptr->live=false;
 						iptr->put(killmethodkey,string(AUTOKILL_RFQICutoff));
@@ -3768,9 +3769,9 @@ set<long> TraceEditOperator::kill_low_RFQualityIndex_traces(
 	tes.QI_weights[1]=a2;
 	tes.QI_weights[2]=a3;
 	tes.QI_min=qi_min;
-	tes.nkilled=evids_to_kill.size();
+	tes.nkilled=traceids_to_kill.size();
 	statistics.push_back(tes);
-	return(evids_to_kill);
+	return(traceids_to_kill);
 }
 //set all traces back to live.
 void TraceEditOperator::set_ensemble_live_status(TimeSeriesEnsemble& tse,
