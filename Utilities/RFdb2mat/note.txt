@@ -1,0 +1,7 @@
+g++-8 -o matcreat matcreat.cpp -I/Applications/MATLAB_R2015b.app/extern/include -L/Applications/MATLAB_R2015b.app/bin/maci64 -lmat -lmx
+
+In .bash_profile, add the following lines:
+export MATLABROOT=/Applications/MATLAB_R2015b.app
+export PATH=$PATH:$MATLABROOT/bin/maci64
+export DYLD_LIBRARY_PATH=$MATLABROOT/bin/maci64/:$MATLABROOT/sys/os/maci64/
+
