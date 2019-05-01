@@ -864,8 +864,11 @@ int save_to_db(ThreeComponentEnsemble& tce,MetadataList& mdl,
 			try {
 				d->put("dir",outdir);
 				//debug
-				cout<<"db: save to dir: "<<outdir<<endl;
-				cout<<"db: dir in db: "<<d->get_string("dir")<<endl;
+				if(MYDEBUGMODE)
+				{
+					cout<<"db: save to dir: "<<outdir<<endl;
+					cout<<"db: dir in db: "<<d->get_string("dir")<<endl;
+				}
 				if(outtable=="wfprocess")
 				{
 					outdfile=outdfile_base+"_"+d->get_string("sta")+".3C";
