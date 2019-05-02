@@ -3,7 +3,7 @@ DATADIR=schemas/css3.0.ext
 DATA=wfprocess evlink sclink
 SUBDIR=/contrib
 
-MATLABROOT = /Applications/MATLAB_R2014b.app
+MATLABROOT = /Applications/MATLAB_R2015b.app
 
 ldlibs = -lseispp -lbrttutil $(TRLIBS) $(DBLIBS) \
        -L$(BOOSTLIB) -lboost_thread -lboost_system -lboost_filesystem \
