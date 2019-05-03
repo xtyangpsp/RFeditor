@@ -2,22 +2,15 @@
  * matcreat.cpp - MAT-file creation program
  *
  * See the MATLAB External Interfaces/API Guide for compiling information.
- *
- * Calling syntax:
- *
- *   matcreat
- *
  * Create a MAT-file which can be loaded into MATLAB.
  *
- * This program demonstrates the use of the following functions:
+ * This program uses the following functions:
  *
  *  matClose
- *  matGetVariable
  *  matOpen
  *  matPutVariable
- *  matPutVariableAsGlobal
  *
- * Copyright 1984-2007 The MathWorks, Inc.
+ * Copyright of matcreat.cpp: 1984-2007 The MathWorks, Inc.
  */
 #include <stdio.h>
 #include <string.h> /* For strcmp() */
