@@ -1,17 +1,20 @@
 /*
- * matcreat.cpp - MAT-file creation program
- *
- * See the MATLAB External Interfaces/API Guide for compiling information.
- * Create a MAT-file which can be loaded into MATLAB.
- *
- * This program uses the following functions:
- *
- *  matClose
- *  matOpen
- *  matPutVariable
- *
- * Copyright of matcreat.cpp: 1984-2007 The MathWorks, Inc.
- */
+This program converts the waveforms in Antelope database tables to MATLAB *.mat files. The current version only works for wfprocess as input table. There are similar framework for wfdisc as the input table, though not fully implemented yet, as of May 3, 2019.
+
+It requires a working MATLAB installed, with mex libraries available. For Bash, in .bash_profile, add the following lines:
+export MATLABROOT=/Applications/MATLAB_R2015b.app
+export PATH=$PATH:$MATLABROOT/bin/maci64
+export DYLD_LIBRARY_PATH=$MATLABROOT/bin/maci64/:$MATLABROOT/sys/os/maci64/:$DYLD_LIBRARY_PATH
+
+Remember to replace the MATLAB root directory for different versions or installation paths.
+
+Ideas for future development:
+1. An option to determine whether to use netmag table
+2. Handle wfdisc as the input table.
+3. Save traces less than 3 components.
+
+By Xiaotao Yang (stcyang@gmail.com)
+*/
 #include <stdio.h>
 #include <string.h> /* For strcmp() */
 #include <stdlib.h> /* For EXIT_FAILURE, EXIT_SUCCESS */
@@ -48,7 +51,7 @@ const string csversion("v1.0.0");
 
 void version()
 {
-	cerr <<"< version "<<csversion<<" > 5/2/2019"<<endl;
+	cerr <<"< version "<<csversion<<" > 5/3/2019"<<endl;
 }
 void author()
 {
@@ -348,6 +351,15 @@ MetadataList generate_mdlist(string mdltype, bool use_arrival_data=false, bool u
 			metadata.tag="time"; metadata.mdt=MDreal; mdlist.push_back(metadata);
 			metadata.tag="nsamp"; metadata.mdt=MDint; mdlist.push_back(metadata);
 			metadata.tag="samprate"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			//add site and origin info
+			metadata.tag="orid"; metadata.mdt=MDint; mdlist.push_back(metadata);
+			metadata.tag="site.lon"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="site.lat"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="site.elev"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="origin.time"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="origin.lon"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="origin.lat"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="origin.depth"; metadata.mdt=MDreal; mdlist.push_back(metadata);
 			if(use_arrival_data)
 			{
 				metadata.tag="atime"; metadata.mdt=MDreal; mdlist.push_back(metadata);
@@ -357,8 +369,8 @@ MetadataList generate_mdlist(string mdltype, bool use_arrival_data=false, bool u
 			}
 			if(use_netmag_table)
 			{
-				metadata.tag="magtype"; metadata.mdt=MDstring; mdlist.push_back(metadata);
-				metadata.tag="magnitude"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+				metadata.tag="netmag.magtype"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+				metadata.tag="netmag.magnitude"; metadata.mdt=MDreal; mdlist.push_back(metadata);
 			}
 		}
 		else if(mdltype=="wfdiscout")
@@ -445,7 +457,19 @@ ThreeComponentEnsemble exclude_false_traces(ThreeComponentEnsemble& tce)
 }
 /*
 Save one ThreeComponentSeismogram object to MATLAB *.mat file.
-*/
+ * This function was modified from: matcreat.cpp - MAT-file creation program
+ *
+ * See the MATLAB External Interfaces/API Guide for compiling information.
+ * Create a MAT-file which can be loaded into MATLAB.
+ *
+ * This program uses the following functions:
+ *
+ *  matClose
+ *  matOpen
+ *  matPutVariable
+ *
+ * Copyright of matcreat.cpp: 1984-2007 The MathWorks, Inc.
+ */
 int save_to_mat(ThreeComponentSeismogram& tcs,string outdir, string filenm) 
 {
 	const string x0_name("I0");
@@ -998,7 +1022,7 @@ int main(int argc, char **argv)
 				if(SEISPP_verbose) cout<<"Setting event IDs ..."<<endl;
 				set_eventids(dall_3c);		
 				cout<<"Excluding duplicates and false traces ..."<<endl;
-				set_duplicate_traces_to_false(dall_3c,SEISPP_verbose);
+				set_duplicate_traces_to_false(dall_3c,MYDEBUGMODE);
 				dall_3c_save=exclude_false_traces(dall_3c);
 				if(SEISPP_verbose) 
 					cout<<"Size of the ensemble to save: "<<dall_3c_save.member.size()<<endl;
@@ -1044,9 +1068,7 @@ int main(int argc, char **argv)
 				dall_3c.member.clear();   
 				dall_3c_save.member.clear(); 
 			}
-		
         }
-
 
         if(SEISPP_verbose) cout<<"RFdb2mat finished."<<endl;
 
