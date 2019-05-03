@@ -25,6 +25,7 @@
 #include <vector> /* For STL */
 #include <fstream>
 #include <list>
+#include <sys/stat.h> 
 #include <algorithm>
 #include "dmatrix.h"
 #include "seispp.h"
@@ -34,6 +35,7 @@
 #include "ThreeComponentSeismogram.h"
 #include "ensemble.h"
 #include "Metadata.h"
+#include "Hypocenter.h"
 #include "mat.h"
 
 using namespace std;
@@ -44,7 +46,7 @@ const string tracetype_3c("3C"), tracetype_1c("1C");
 const string MDL_ENSEMBLE("mdlist_ensemble"), MDL_WFDISCIN("mdlist_wfdisc_in"), 
 			MDL_WFDISCOUT("mdlist_wfdisc_out"), MDL_WFPROCESSIN("mdlist_wfprocess_in"),
 			MDL_WFPROCESSOUT("mdlist_wfprocess_out");
-const bool MYDEBUGMODE(true);
+const bool MYDEBUGMODE(false);
 const string evidkey("eventid");   // not evid to avoid collision
 
 bool SEISPP::SEISPP_verbose(false);
@@ -191,6 +193,40 @@ int set_duplicate_traces_to_false(TimeSeriesEnsemble& d, bool verbose)
 	}catch(...){throw;};
 }
 
+int set_duplicate_traces_to_false(ThreeComponentEnsemble& d, bool verbose)
+{
+	try{
+	vector<ThreeComponentSeismogram>::iterator dptr;
+	
+    int i=0,evid; //,evid_tmp=-99;
+    set<int> previous_evids;
+    set<int>::iterator it;
+    //double timeres(0.0);
+    //dptr_tmp=d.member.begin();
+    for(dptr=d.member.begin();dptr!=d.member.end();++dptr)
+	{	
+		evid=dptr->get_int(evidkey);
+		if(previous_evids.find(evid)!=previous_evids.end())
+		{
+			if(verbose){
+				cout<<"Duplicate evid = "<<evid
+				<<" of chan = "<<dptr->get_string("chan")
+				<<", set trace status to FALSE!"<<endl;}
+			dptr->live=false;
+			++i;
+		}
+		else
+		{
+		//	evid_tmp=evid;
+			previous_evids.insert(evid);
+		}
+	}
+	//DEBUG
+	//exit(-1);
+	return(i);
+	}catch(...){throw;};
+}
+
 TimeSeriesEnsemble extract_by_chan(TimeSeriesEnsemble& d,string chankey)
 {
     try {
@@ -248,6 +284,15 @@ MetadataList generate_mdlist(string mdltype, bool use_arrival_data=false, bool u
 			metadata.tag="evid"; metadata.mdt=MDint; mdlist.push_back(metadata);
 			metadata.tag="sta"; metadata.mdt=MDstring; mdlist.push_back(metadata);
 			metadata.tag="chan"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			//add site and origin info
+			metadata.tag="orid"; metadata.mdt=MDint; mdlist.push_back(metadata);
+			metadata.tag="site.lon"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="site.lat"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="site.elev"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="origin.time"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="origin.lon"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="origin.lat"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+			metadata.tag="origin.depth"; metadata.mdt=MDreal; mdlist.push_back(metadata);
 			if(use_decon_in_editing)
 			{
 				metadata.tag="decon.nspike"; metadata.mdt=MDint; mdlist.push_back(metadata);
@@ -267,8 +312,8 @@ MetadataList generate_mdlist(string mdltype, bool use_arrival_data=false, bool u
 			}
 			if(use_netmag_table)
 			{
-				metadata.tag="magtype"; metadata.mdt=MDstring; mdlist.push_back(metadata);
-				metadata.tag="magnitude"; metadata.mdt=MDreal; mdlist.push_back(metadata);
+				metadata.tag="netmag.magtype"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+				metadata.tag="netmag.magnitude"; metadata.mdt=MDreal; mdlist.push_back(metadata);
 			}
 		}
 		else if(mdltype=="wfprocessout")
@@ -365,78 +410,162 @@ void append_decon_attribute_keys(Metadata& md)
 			md.put("decon_peakamp_key",(char *)"decon.peakamp");
 	}catch(...) {throw;};
 }
+
+TimeSeriesEnsemble exclude_false_traces(TimeSeriesEnsemble& d)
+{
+    try {
+        //int nd=d.member.size();
+        //copy metadata
+        TimeSeriesEnsemble result(d);
+        result.member.clear();
+        vector<TimeSeries>::iterator dptr;
+        int i;
+        for(i=0,dptr=d.member.begin();dptr!=d.member.end();++i,++dptr)
+        {
+            if(dptr->live)
+                result.member.push_back(*dptr);
+        }
+        //DEBUG
+        //cout<<"result.member.size()="<<result.member.size()<<endl;
+        return(result);
+    }catch(...){throw;};
+}
+
+ThreeComponentEnsemble exclude_false_traces(ThreeComponentEnsemble& tce)
+{
+    try {
+        //int nd=d.member.size();
+        //copy metadata
+        ThreeComponentEnsemble result(tce);
+        result.member.clear();
+        vector<ThreeComponentSeismogram>::iterator dptr;
+        int i;
+        for(i=0,dptr=tce.member.begin();dptr!=tce.member.end();++i,++dptr)
+        {
+            if(dptr->live)
+                result.member.push_back(*dptr);
+        }
+        //DEBUG
+        //cout<<"result.member.size()="<<result.member.size()<<endl;
+        return(result);
+    }catch(...){throw;};
+}
 /*
 Save one ThreeComponentSeismogram object to MATLAB *.mat file.
 */
-int save2mat(string outdir, string filename, ThreeComponentSeismogram& tcs,
-			MetadataList& mdl) 
+int save_to_mat(ThreeComponentSeismogram& tcs,string outdir, string filenm) 
 {
-  MATFile *pmat;
-  mxArray *pa1, *pa2, *pa3;
-  std::vector<int> myInts;
-  myInts.push_back(1);
-  myInts.push_back(2);
-  printf("Accessing a STL vector: %d\n", myInts[1]);
+	const string x0_name("I0");
+	const string x1_name("I1");
+	const string x2_name("I2");
+	MATFile *pmat;
+	mxArray *tsdata;
+	string sstmp;
+	double olon,olat,odepth,otime,slon,slat,selev;
+	char str[BUFSIZE];
+	int status,nsamp; 
+// 	std::vector<int> myInts;
+// 	myInts.push_back(1);
+// 	myInts.push_back(2);
+// 	printf("Accessing a STL vector: %d\n", myInts[1]);
+	string filename=outdir.c_str()+string("/")+filenm.c_str();
+	if(MYDEBUGMODE) printf("Creating file %s...\n\n", filename.c_str());
+	pmat = matOpen(filename.c_str(), "w");
+	if (pmat == NULL) {
+		printf("Error creating file %s\n", filename.c_str());
+		printf("(Do you have write permission in this directory?)\n");
+		return(EXIT_FAILURE);
+	}
+	
+	//Save metadata to file
+	sstmp=tcs.get_string("sta");
+	nsamp=tcs.ns;
+// 	status = matPutVariable(pmat, "sta", mxCreateString(sstmp.c_str()));
+// 	if (status != 0) {
+// 	  printf("%s :  Error using matPutVariable on line %d\n", __FILE__, __LINE__);
+// 	  return(EXIT_FAILURE);
+// 	} 
+	olat=tcs.get_double("origin.lat");
+	olon=tcs.get_double("origin.lon");
+	odepth=tcs.get_double("origin.depth");
+	otime=tcs.get_double("origin.time");
+	slat=tcs.get_double("site.lat");
+	slon=tcs.get_double("site.lon");
+	selev=tcs.get_double("site.elev");
+		
+	Hypocenter hypo(rad(olat),rad(olon),odepth,otime,
+				string("tttaup"),string("iasp91"));
+	SlownessVector Pslow=hypo.pslow(rad(slat),rad(slon),selev);
+	
+	matPutVariable(pmat, "sta", mxCreateString(sstmp.c_str()));
+	matPutVariable(pmat, "slon", mxCreateDoubleScalar(slon));
+	matPutVariable(pmat, "slat", mxCreateDoubleScalar(slat));
+	matPutVariable(pmat, "selev", mxCreateDoubleScalar(selev));
+	matPutVariable(pmat, "orid", mxCreateDoubleScalar(tcs.get_int("orid")));
+	matPutVariable(pmat, "olon", mxCreateDoubleScalar(olon));
+	matPutVariable(pmat, "olat", mxCreateDoubleScalar(olat));
+	matPutVariable(pmat, "odepth", mxCreateDoubleScalar(odepth));
+	matPutVariable(pmat, "mag",mxCreateDoubleScalar(tcs.get_double("netmag.magnitude")));
+	matPutVariable(pmat, "delta", mxCreateDoubleScalar(deg(hypo.distance(rad(slat),rad(slon)))));
+	matPutVariable(pmat, "seaz", mxCreateDoubleScalar(deg(hypo.seaz(rad(slat),rad(slon)))));
+	matPutVariable(pmat, "esaz", mxCreateDoubleScalar(deg(hypo.esaz(rad(slat),rad(slon)))));
+	matPutVariable(pmat, "pslow", mxCreateDoubleScalar(Pslow.mag()));
+	//trace metadata.
+	matPutVariable(pmat, "nsamp", mxCreateDoubleScalar(nsamp));
+	matPutVariable(pmat, "dt", mxCreateDoubleScalar(tcs.dt));
+	matPutVariable(pmat, "t0", mxCreateDoubleScalar(tcs.t0));
 
-  double data[9] = { 1.0, 4.0, 7.0, 2.0, 5.0, 8.0, 3.0, 6.0, 9.0 };
-  const char *file = "mattest.mat";
-  char str[BUFSIZE];
-  int status; 
+	//get and save waveform to file
+	for(int j=0;j<3;j++)
+	{
+		TimeSeries ts=*ExtractComponent(tcs,j);
+		switch(j)
+		{
+			case 0:
+				ts.put(string("chan"),x0_name);
+			break;
+			case 1:
+				ts.put(string("chan"),x1_name);
+			break;
+			case 2:
+				ts.put(string("chan"),x2_name);
+			break;
+		}
+		//debug output
+// 		vector<double>::iterator iptr;
+// 		for(iptr=ts.s.begin();iptr!=ts.s.end();++iptr)
+// 		{
+// 			printf("%12.5f\n",*iptr);
+// 		}
+		tsdata = mxCreateDoubleMatrix(ts.get_int("nsamp"),1,mxREAL);
+		if (tsdata == NULL) {
+			printf("%s : Out of memory on line %d\n", __FILE__, __LINE__); 
+			printf("Unable to create mxArray.\n");
+			return(EXIT_FAILURE);
+		}
+		if(MYDEBUGMODE)
+			cout<<"Number of samples: "<<ts.get_int("nsamp")<<endl;
+		
+		//Save waveform to file
+		std::copy(ts.s.begin(), ts.s.end(), mxGetPr(tsdata));
+// 		memcpy((void *)(mxGetPr(tsdata)), *ts.s, ts.get_int("nsamp"));
+		string chantmp=ts.get_string("chan")+string("_data");
+		status = matPutVariable(pmat, chantmp.c_str(), tsdata);
+		if (status != 0) {
+			  printf("%s :  Error using matPutVariable on line %d\n", __FILE__, __LINE__);
+			  return(EXIT_FAILURE);
+		}
+		
+	}
+	
+	mxDestroyArray(tsdata);
 
-  printf("Creating file %s...\n\n", file);
-  pmat = matOpen(file, "w");
-  if (pmat == NULL) {
-    printf("Error creating file %s\n", file);
-    printf("(Do you have write permission in this directory?)\n");
-    return(EXIT_FAILURE);
-  }
+	if (matClose(pmat) != 0) {
+	printf("Error closing file %s\n",filename.c_str());
+	return(EXIT_FAILURE);
+	}
 
-  pa1 = mxCreateDoubleMatrix(3,3,mxREAL);
-  if (pa1 == NULL) {
-      printf("%s : Out of memory on line %d\n", __FILE__, __LINE__); 
-      printf("Unable to create mxArray.\n");
-      return(EXIT_FAILURE);
-  }
-
-  pa2 = mxCreateDoubleMatrix(3,3,mxREAL);
-  if (pa2 == NULL) {
-      printf("%s : Out of memory on line %d\n", __FILE__, __LINE__);
-      printf("Unable to create mxArray.\n");
-      return(EXIT_FAILURE);
-  }
-  memcpy((void *)(mxGetPr(pa2)), (void *)data, sizeof(data));
-  
-  pa3 = mxCreateString("MATLAB: the language of technical computing");
-  if (pa3 == NULL) {
-      printf("%s :  Out of memory on line %d\n", __FILE__, __LINE__);
-      printf("Unable to create string mxArray.\n");
-      return(EXIT_FAILURE);
-  }
-
-  status = matPutVariable(pmat, "LocalDouble", pa1);
-  if (status != 0) {
-      printf("%s :  Error using matPutVariable on line %d\n", __FILE__, __LINE__);
-      return(EXIT_FAILURE);
-  }  
-
-  status = matPutVariable(pmat, "LocalString", pa3);
-  if (status != 0) {
-      printf("%s :  Error using matPutVariable on line %d\n", __FILE__, __LINE__);
-      return(EXIT_FAILURE);
-  } 
-  
-  /* clean up */
-  mxDestroyArray(pa1);
-  mxDestroyArray(pa2);
-  mxDestroyArray(pa3);
-
-  if (matClose(pmat) != 0) {
-    printf("Error closing file %s\n",file);
-    return(EXIT_FAILURE);
-  }
-
-  printf("Done\n");
-  return(EXIT_SUCCESS);
+	return(EXIT_SUCCESS);
 }
 
 /*==================================================================
@@ -507,7 +636,13 @@ int main(int argc, char **argv)
         else
             usage();
     }
-
+	int check = mkdir(outdir.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); 
+    // check if directory is created or not 
+    if (check) 
+    {
+        cout<<"Directory may exist: "<<outdir<<endl; 
+    } 
+	
     try {
 			/****************************************************************
 			*****************************************************************
@@ -522,7 +657,7 @@ int main(int argc, char **argv)
         MetadataList mdlens=generate_mdlist("ensemble"); //=pfget_mdlist(pf,"ensemble_mdl");
         
         MetadataList mdl;
-        MetadataList mdlout, mdlout_wfd, mdlout_wfp;
+
         bool use_arrival_data=true; //control.get_bool("use_arrival_data");
 
         //read in preference for use of netmag table
@@ -552,7 +687,6 @@ int main(int argc, char **argv)
 		{			
 			mdl=generate_mdlist("wfprocessin",use_arrival_data, 
         						use_netmag_table,use_decon_in_editing);
-
         }
         
         //put these two parameters into the metadata for trace-editing.
@@ -686,6 +820,7 @@ int main(int argc, char **argv)
 					exit(-1);
 				}
 			}
+			dbin.natural_join("site");
         }
         			
 		//read in netmag information.
@@ -746,14 +881,14 @@ int main(int argc, char **argv)
 				*/
         vector<TimeSeries>::iterator im;
         TimeSeriesEnsemble radial,transverse,vertical,tse_edit0,tse_edit; //radial0
-
-// 		for(i=0,dbin.rewind();i<nsta;++i,++dbin)
-       for(i=0,dbin.rewind();i<1;++i,++dbin)
+		
+		for(i=0,dbin.rewind();i<nsta;++i,++dbin)
+//        for(i=0,dbin.rewind();i<1;++i,++dbin)
         {   
             cout <<">>++++++++++++++++++++++++++++++"<<endl
             	<<"Calling data reader for ensemble number ["<<i+1<<" / "<<nsta<<"]"<<endl;
             TimeSeriesEnsemble dall;
-            ThreeComponentEnsemble dall_3c;//,dall_3c_bkp;
+            ThreeComponentEnsemble dall_3c,dall_3c_save;//,dall_3c_bkp;
             /*
 			*****************************************************************
 			*****************************************************************
@@ -844,6 +979,9 @@ int main(int argc, char **argv)
 				}
 				
 				dall.member.clear();	
+				radial.member.clear();
+				transverse.member.clear();
+				vertical.member.clear();
             }
             // load 3 component data from the view.
             //
@@ -865,12 +1003,27 @@ int main(int argc, char **argv)
 				   on start time only.  Not a bulletproof approach but one 
 				   that should work for RF data */
 				if(SEISPP_verbose) cout<<"Setting event IDs ..."<<endl;
-				set_eventids(dall_3c);
+				set_eventids(dall_3c);		
+				cout<<"Excluding duplicates and false traces ..."<<endl;
+				set_duplicate_traces_to_false(dall_3c,SEISPP_verbose);
+				dall_3c_save=exclude_false_traces(dall_3c);
+				if(SEISPP_verbose) 
+					cout<<"Size of the ensemble to save: "<<dall_3c_save.member.size()<<endl;
 				/* use start time as 0.  Also set moveout keyword
 				to allow stacking in engine */
 				vector<ThreeComponentSeismogram>::iterator im2;
 				double atime, t0, moveout;
-				for(im2=dall_3c.member.begin();im2!=dall_3c.member.end();++im2)
+				
+				cout<<"Saving to MAT files ... [ "<<sta<<" ]"<<endl;  
+				string outdirsta=outdir+string("/")+sta;
+				
+				check = mkdir(outdirsta.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); 
+				// check if directory is created or not 
+				if (check) 
+				{
+					cout<<"  Directory may exist: "<<outdirsta<<endl; 
+				} 
+				for(im2=dall_3c_save.member.begin();im2!=dall_3c_save.member.end();++im2)
 				{
 					//cout<<strtime(im2->t0)<<endl;
 					if(use_arrival_data)
@@ -888,20 +1041,21 @@ int main(int argc, char **argv)
 					//cout<<im2->get_int("evid")<<"   "<<moveout<<endl; 
 					
 					im2->put(moveout_keyword,0.0);
+					
+					//save to MATLAB *.mat file.
+					string outfile=sta+string("_")+std::to_string(im2->get_int(evidkey))+string(".mat");
+					save_to_mat(*im2,outdirsta,outfile);
+
 				}		
-				
-            }
-			
-            cout<<"-- Excluding duplicates and false traces ..."<<endl;
 
-			cout<<"Saving to MAT files ..."<<endl;  
-			dall_3c.member.clear();    
+				dall_3c.member.clear();   
+				dall_3c_save.member.clear(); 
+			}
+		
         }
-        radial.member.clear();
-        transverse.member.clear();
-        vertical.member.clear();
 
-        if(SEISPP_verbose) cout<<"RFdb2mat is finished."<<endl;
+
+        if(SEISPP_verbose) cout<<"RFdb2mat finished."<<endl;
 
     }catch(SeisppError& serr)
     {
