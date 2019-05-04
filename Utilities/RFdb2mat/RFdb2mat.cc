@@ -260,9 +260,8 @@ MetadataList generate_mdlist(string mdltype, bool use_arrival_data=false, bool u
 	
 		if(mdltype=="ensemble")
 		{
-			metadata.tag="sta";
-			metadata.mdt=MDstring;
-			mdlist.push_back(metadata);
+			metadata.tag="sta"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="snet"; metadata.mdt=MDstring; mdlist.push_back(metadata);
 		}
 		else if(mdltype=="wfprocessin")
 		{
@@ -279,6 +278,7 @@ MetadataList generate_mdlist(string mdltype, bool use_arrival_data=false, bool u
 			metadata.tag="wfprocess.algorithm"; metadata.mdt=MDstring; mdlist.push_back(metadata);
 			metadata.tag="evid"; metadata.mdt=MDint; mdlist.push_back(metadata);
 			metadata.tag="sta"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="snet"; metadata.mdt=MDstring; mdlist.push_back(metadata);
 			metadata.tag="chan"; metadata.mdt=MDstring; mdlist.push_back(metadata);
 			//add site and origin info
 			metadata.tag="orid"; metadata.mdt=MDint; mdlist.push_back(metadata);
@@ -347,6 +347,7 @@ MetadataList generate_mdlist(string mdltype, bool use_arrival_data=false, bool u
 			metadata.tag="wfdisc.foff"; metadata.mdt=MDint; mdlist.push_back(metadata);
 			metadata.tag="wfdisc.commid"; metadata.mdt=MDint; mdlist.push_back(metadata);
 			metadata.tag="sta"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="snet"; metadata.mdt=MDstring; mdlist.push_back(metadata);
 			metadata.tag="chan"; metadata.mdt=MDstring; mdlist.push_back(metadata);
 			metadata.tag="time"; metadata.mdt=MDreal; mdlist.push_back(metadata);
 			metadata.tag="nsamp"; metadata.mdt=MDint; mdlist.push_back(metadata);
@@ -496,6 +497,9 @@ int save_to_mat(ThreeComponentSeismogram& tcs,string outdir, string filenm)
 	
 	//Save metadata to file
 	sstmp=tcs.get_string("sta");
+	matPutVariable(pmat, "sta", mxCreateString(sstmp.c_str()));
+	sstmp=tcs.get_string("snet");
+	matPutVariable(pmat, "snet", mxCreateString(sstmp.c_str()));
 	nsamp=tcs.ns;
 // 	status = matPutVariable(pmat, "sta", mxCreateString(sstmp.c_str()));
 // 	if (status != 0) {
@@ -513,8 +517,7 @@ int save_to_mat(ThreeComponentSeismogram& tcs,string outdir, string filenm)
 	Hypocenter hypo(rad(olat),rad(olon),odepth,otime,
 				string("tttaup"),string("iasp91"));
 	SlownessVector Pslow=hypo.pslow(rad(slat),rad(slon),selev);
-	
-	matPutVariable(pmat, "sta", mxCreateString(sstmp.c_str()));
+
 	matPutVariable(pmat, "slon", mxCreateDoubleScalar(slon));
 	matPutVariable(pmat, "slat", mxCreateDoubleScalar(slat));
 	matPutVariable(pmat, "selev", mxCreateDoubleScalar(selev));
@@ -732,6 +735,7 @@ int main(int argc, char **argv)
         AttributeMap am("css3.0");
         /* Open the in and out database */
         DatascopeHandle dbin(dbin_name,true);
+        DatascopeHandle dbsite(dbin);
         if(use_wfdisc_in) 
         {
         	//dbin.lookup("wfdisc"); 
@@ -766,6 +770,8 @@ int main(int argc, char **argv)
 					cout<< "Size of working view in wfdisc ="
 						<< dbin.number_tuples()<<endl;
 			}
+			dbin.natural_join("site");
+			dbin.natural_join("snetsta");
         }
         else
         //evlink, sclink tables are required when using wfprocess table as input.
@@ -837,9 +843,11 @@ int main(int argc, char **argv)
 					exit(-1);
 				}
 			}
+			dbin.natural_join("snetsta");
 			dbin.natural_join("site");
         }
-        			
+//         dbin.db.record=0;
+// 		cout<<dbin.get_string("snet")<<endl;
 		//read in netmag information.
 		if(use_netmag_table)
 		{
@@ -860,7 +868,7 @@ int main(int argc, char **argv)
             	<<dbin_name<<endl;
             exit(-1);
         }
-
+		
         /* Prep the input wfdisc table*/
         /* WARNING:  not adequate.  This needs to be changed as we 
            need evid.  May be able to fake this by searching for matching
@@ -889,7 +897,7 @@ int main(int argc, char **argv)
 				*/
 
         int nsta=dbin.number_tuples(),ntrace(0),nradial(0);
-        string sta,tracetype;
+        string sta,tracetype,snet;
         		/****************************************************************
 				*****************************************************************
 				*************<<<<<<<<<<<< START MAIN LOOP >>>>>>>>>>*************
@@ -898,7 +906,7 @@ int main(int argc, char **argv)
 				*/
         vector<TimeSeries>::iterator im;
         TimeSeriesEnsemble radial,transverse,vertical,tse_edit0,tse_edit; //radial0
-		
+
 		for(i=0,dbin.rewind();i<nsta;++i,++dbin)
 //        for(i=0,dbin.rewind();i<1;++i,++dbin)
         {   
@@ -1005,11 +1013,13 @@ int main(int argc, char **argv)
             else
             {
             	//try{
-            	ThreeComponentEnsemble dall0_3c(dbin, mdl,mdlens,am);
+            	ThreeComponentEnsemble dall_3c(dbin, mdl,mdlens,am);
 
-            	dall_3c=dall0_3c;
-            	dall0_3c.member.clear();
             	sta=dall_3c.get_string("sta");
+            	// if(dall_3c.is_attribute_set("snet"))
+//             		cout<<"There is snet!"<<endl;
+            	//dall_3c.put("snet","RF"); //this is a place holder for future efforts in solving this issue.
+            	snet=dall_3c.get_string("snet");
             	ntrace=dall_3c.member.size();
             	//nradial=ntrace;
             	tracetype=const_cast<char *>(tracetype_3c.c_str());
@@ -1031,8 +1041,8 @@ int main(int argc, char **argv)
 				vector<ThreeComponentSeismogram>::iterator im2;
 				double atime, t0, moveout;
 				
-				cout<<"Saving to MAT files ... [ "<<sta<<" ]"<<endl;  
-				string outdirsta=outdir+string("/")+sta;
+				cout<<"Saving to MAT files ... [ "<<snet<<"."<<sta<<" ]"<<endl;  
+				string outdirsta=outdir+string("/")+snet+string(".")+sta;
 				
 				check = mkdir(outdirsta.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); 
 				// check if directory is created or not 
@@ -1060,11 +1070,10 @@ int main(int argc, char **argv)
 					im2->put(moveout_keyword,0.0);
 					
 					//save to MATLAB *.mat file.
-					string outfile=sta+string("_")+std::to_string(im2->get_int(evidkey))+string(".mat");
+					string outfile=snet+string(".")+sta+string("_")+
+									std::to_string(im2->get_int(evidkey))+string(".mat");
 					save_to_mat(*im2,outdirsta,outfile);
-
 				}		
-
 				dall_3c.member.clear();   
 				dall_3c_save.member.clear(); 
 			}
