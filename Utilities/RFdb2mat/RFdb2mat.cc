@@ -569,7 +569,7 @@ int save_to_mat(ThreeComponentSeismogram& tcs,string outdir, string filenm)
 		//Save waveform to file
 		std::copy(ts.s.begin(), ts.s.end(), mxGetPr(tsdata));
 // 		memcpy((void *)(mxGetPr(tsdata)), *ts.s, ts.get_int("nsamp"));
-		string chantmp=ts.get_string("chan")+string("_data");
+		string chantmp=string("data_")+ts.get_string("chan");
 		status = matPutVariable(pmat, chantmp.c_str(), tsdata);
 		if (status != 0) {
 			  printf("%s :  Error using matPutVariable on line %d\n", __FILE__, __LINE__);
