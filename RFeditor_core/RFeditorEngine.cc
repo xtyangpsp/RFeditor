@@ -315,7 +315,7 @@ set<long> RFeditorEngine::edit(TimeSeriesEnsemble& rd)
 			cout << "Loaded ensemble size="<<ntraces<<endl;
 			/* This changes the plot titles for each window.  Assumes sta
 			   is defined in ensemble metadata */
-			station=rd.get_string("sta");
+			station=rd.get_string("snetsta");
 			//string title=string("Transverse RF data for station ")+sta;
 			//Twindow.put("title",title);
 			string title=string("< ")+rd.get_string("chan")+

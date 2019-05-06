@@ -120,7 +120,7 @@ void SeismicPlot::initialize_widgets(Metadata& md)
         ThreeComponentMode=md.get_bool("ThreeComponentMode");
         comp0=NULL;  comp1=NULL;  comp2=NULL;
         argc=1;
-        argv[0]=strdup("SeismicPlotWidget");
+        argv[0]=strdup("RFeditor");
         XtSetLanguageProc(NULL, NULL, NULL);
         XtToolkitThreadInitialize();
         toplevel = XtVaAppInitialize(&AppContext, (char *)"seismicplot",NULL,0,
@@ -2330,7 +2330,7 @@ void select_trace(Widget w, XtPointer client_data, XtPointer userdata)
     			plot_handle->beam_tse.member.push_back(ts);
     			stringstream beam_title;
     			beam_title<<"Trace="<<tmp+1<<", evid="<<evid<<" for station: "
-    				<<sensemble->get_string("sta")<<'\0';
+    				<<sensemble->get_string("snetsta")<<'\0';
     			plot_handle->beam_tse.put("beam_title",beam_title.str());
     			plot_handle->do_beam_plot();
     			if(plot_handle->killed_review_mode)
@@ -3064,9 +3064,9 @@ void TraceEditPlot::get_stack_trace(StackType st)
 		beam_tse.member[0].put(evidkey,-999);
 		string beam_title;
 		if(st==RobustSNR)
-			beam_title=string("Robust Stack Trace for Station: ")+sensemble->get_string("sta");
+			beam_title=string("Robust Stack Trace for Station: ")+sensemble->get_string("snetsta");
 		else if(st==BasicStack)
-			beam_title=string("Average Stack Trace for Station: ")+sensemble->get_string("sta");
+			beam_title=string("Average Stack Trace for Station: ")+sensemble->get_string("snetsta");
 		beam_tse.put("beam_title",beam_title);
 	}catch(SeisppError& serr)
 	{

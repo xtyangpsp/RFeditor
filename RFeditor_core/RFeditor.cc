@@ -138,6 +138,8 @@ void history_current()
 	<<"     duplicated eventids that will be treated as killed traces, resulting in very few or zero traces to save. To address"<<endl
 	<<" 	this issue, I am changing to use traceid as unique index for each trace, in addition to eventid. The unique traceid"<<endl
 	<<"		will be used to mark the killed traces."<<endl
+<<">> 5/6/2019 XT Yang"<<endl
+	<<" (1) Display snet information. added snetsta into metadata."<<endl
 	<<endl;
 }
 
@@ -145,7 +147,7 @@ const string csversion("v3.7.5");
 
 void version()
 {
-	cerr <<"< version "<<csversion<<" > 4/30/2019"<<endl;
+	cerr <<"< version "<<csversion<<" > 5/6/2019"<<endl;
 }
 void author()
 {
@@ -993,9 +995,8 @@ MetadataList generate_mdlist(string mdltype, bool use_arrival_data=false, bool u
 	
 		if(mdltype=="ensemble")
 		{
-			metadata.tag="sta";
-			metadata.mdt=MDstring;
-			mdlist.push_back(metadata);
+			metadata.tag="sta";metadata.mdt=MDstring;mdlist.push_back(metadata);
+			metadata.tag="snet";metadata.mdt=MDstring;mdlist.push_back(metadata);
 		}
 		else if(mdltype=="wfprocessin")
 		{
@@ -1012,6 +1013,7 @@ MetadataList generate_mdlist(string mdltype, bool use_arrival_data=false, bool u
 			metadata.tag="wfprocess.algorithm"; metadata.mdt=MDstring; mdlist.push_back(metadata);
 			metadata.tag="evid"; metadata.mdt=MDint; mdlist.push_back(metadata);
 			metadata.tag="sta"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="snet";metadata.mdt=MDstring;mdlist.push_back(metadata);
 			metadata.tag="chan"; metadata.mdt=MDstring; mdlist.push_back(metadata);
 			if(use_decon_in_editing)
 			{
@@ -1071,6 +1073,7 @@ MetadataList generate_mdlist(string mdltype, bool use_arrival_data=false, bool u
 			metadata.tag="wfdisc.foff"; metadata.mdt=MDint; mdlist.push_back(metadata);
 			metadata.tag="wfdisc.commid"; metadata.mdt=MDint; mdlist.push_back(metadata);
 			metadata.tag="sta"; metadata.mdt=MDstring; mdlist.push_back(metadata);
+			metadata.tag="snet";metadata.mdt=MDstring;mdlist.push_back(metadata);
 			metadata.tag="chan"; metadata.mdt=MDstring; mdlist.push_back(metadata);
 			metadata.tag="time"; metadata.mdt=MDreal; mdlist.push_back(metadata);
 			metadata.tag="nsamp"; metadata.mdt=MDint; mdlist.push_back(metadata);
@@ -1845,6 +1848,7 @@ int main(int argc, char **argv)
 				dbin.join(ljhandle,jk,jk);
 				if(SEISPP_verbose) cout<<"Number of rows after joining with catalog view: "
 										<<dbin.number_tuples()<<endl;
+				        
 				if(dbin.number_tuples()<=0)
 				{
 					cerr<<"Working view has no data after joining with: "
@@ -1888,7 +1892,13 @@ int main(int argc, char **argv)
             dbin.subset(subset_condition);
             cout << "Subset view number of rows = "<<dbin.number_tuples()<<endl;
         }
+		//join snetsta to get snet information
+		dbin.natural_join("site");
+		dbin.natural_join("snetsta");
+		
         list<string> sortkeys, groupkeys;
+        //sortkeys.push_back("snet"); //not sorting by snet yet. current output doesn't save snet information
+        //this will cause problems when running under continue mode OR with subset on stations.
         sortkeys.push_back("sta");
         sortkeys.push_back("time");
         sortkeys.push_back("chan");
@@ -1964,7 +1974,7 @@ int main(int argc, char **argv)
         /*TraceEditOperator object for trace editing.*/
         TraceEditOperator teo(trace_edit_params);
         int nsta=dbin.number_tuples(),ntrace(0),nradial(0);
-        string sta,tracetype;
+        string sta,snet,snetsta,tracetype;
         		/****************************************************************
 				*****************************************************************
 				*************<<<<<<<<<<<< START MAIN LOOP >>>>>>>>>>*************
@@ -2004,20 +2014,22 @@ int main(int argc, char **argv)
             	dall=dall0;
             	dall0.member.clear();
             	sta=dall.get_string("sta");
+            	snet=dall.get_string("snet");
+            	snetsta=snet+string(".")+sta;
             	ntrace=dall.member.size();
             	if(no_vertical_data) ntrace=ntrace/2;
             	else ntrace=ntrace/3;
             	tracetype=const_cast<char *>(tracetype_1c.c_str());
 				logfile << "Read "<<dall.member.size()<<" "<<tracetype<<" RF traces for station = "
-					<< sta <<endl;
+					<< snetsta <<endl;
 				cout << "Read "<<dall.member.size()<<" "<<tracetype<<" RF traces for station = "
-					<< sta <<endl;
+					<< snetsta <<endl;
 
 				if(ntrace<minrfcutoff)
 				{
-					cout << "Station "<<sta<<" dropped.   Count below miminum of "
+					cout << "Station "<<snetsta<<" dropped.   Count below miminum of "
 						<< minrfcutoff<<endl;
-					logfile << "Station "<<sta
+					logfile << "Station "<<snetsta
 						<<" dropped. Count below miminum of "
 						<< minrfcutoff<<endl;
 					continue;
@@ -2117,19 +2129,21 @@ int main(int argc, char **argv)
             	dall0_3c.member.clear();
             	//if(!save_filtered_data && apply_prefilter) dall_3c_bkp=dall0_3c;
             	sta=dall_3c.get_string("sta");
+            	snet=dall_3c.get_string("snet");
+            	snetsta=snet+string(".")+sta;
             	ntrace=dall_3c.member.size();
             	//nradial=ntrace;
             	tracetype=const_cast<char *>(tracetype_3c.c_str());
             	logfile << "Read "<<ntrace<<" "<<tracetype<<" RF traces for station = "
-					<< sta <<endl;
+					<< snetsta <<endl;
 				cout << "Read "<<ntrace<<" "<<tracetype<<" RF traces for station = "
-					<< sta <<endl;
+					<< snetsta <<endl;
 
 				if(ntrace<minrfcutoff)
 				{
-					cout << "Station "<<sta<<" dropped.   Count below miminum of "
+					cout << "Station "<<snetsta<<" dropped.   Count below miminum of "
 						<< minrfcutoff<<endl;
-					logfile << "Station "<<sta
+					logfile << "Station "<<snetsta
 						<<" dropped. Count below miminum of "
 						<< minrfcutoff<<endl;
 					continue;
@@ -2207,13 +2221,14 @@ int main(int argc, char **argv)
 				{
 					cerr << "Problems extracting TimeSeriesEnsemble by component.  Message "
 						<<serr.what()<<endl
-						<<"Skipping ensemble for station = "<<sta
+						<<"Skipping ensemble for station = "<<snetsta
 						<<endl;
 					continue;
 				}				
             }
 			
 			tse_edit.put("chan",edit_chan_code);
+			tse_edit.put(snetstakey,snetsta);
 			
             int j=set_duplicate_traces_to_false(tse_edit,MYDEBUGMODE);
             if(j>0 && SEISPP_verbose)
